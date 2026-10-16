@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="HealthcareInventoryManagementSystem.Api/HealthcareInventoryManagementSystem.Api.csproj" />
+  <Project Path="HealthcareInventoryManagementSystem.Application/HealthcareInventoryManagementSystem.Application.csproj" />
+  <Project Path="HealthcareInventoryManagementSystem.Domain/HealthcareInventoryManagementSystem.Domain.csproj" />
+  <Project Path="HealthcareInventoryManagementSystem.Infrastructure/HealthcareInventoryManagementSystem.Infrastructure.csproj" />
+  <Project Path="HealthcareInventoryManagementSystem.Tests/HealthcareInventoryManagementSystem.Tests.csproj" />
+</Solution>

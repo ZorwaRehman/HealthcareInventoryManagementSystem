@@ -71,6 +71,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
+
 // Authenticate the user 
 app.UseAuthentication();
 

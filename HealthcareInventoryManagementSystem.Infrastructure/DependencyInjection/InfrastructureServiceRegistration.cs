@@ -1,4 +1,5 @@
-﻿using HealthcareInventoryManagementSystem.Application.Interfaces.Repositories;
+﻿using HealthcareInventoryManagementSystem.Application.Interfaces;
+using HealthcareInventoryManagementSystem.Application.Interfaces.Repositories;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
 using HealthcareInventoryManagementSystem.Application.Services;
 using HealthcareInventoryManagementSystem.Infrastructure.Persistence;
@@ -30,6 +31,9 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection
             services.AddScoped(
                 typeof(IGenericRepository<>),
                 typeof(GenericRepository<>));
+
+            // Register the item service.
+            services.AddScoped<IItemService, ItemService>();
 
             // Register the password-hashing service.
             services.AddScoped<IPasswordHasherService, PasswordHasherService>();

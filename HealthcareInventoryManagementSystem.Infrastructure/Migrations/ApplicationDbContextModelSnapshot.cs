@@ -22,7 +22,66 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.Medicine", b =>
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.ItemEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("ReorderLevel")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SKU")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SKU")
+                        .IsUnique();
+
+                    b.ToTable("Items", (string)null);
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.MedicineEntity", b =>
                 {
                     b.Property<int>("MedicineId")
                         .ValueGeneratedOnAdd()
@@ -30,32 +89,17 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MedicineId"));
 
-                    b.Property<string>("BatchNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("GenericName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("QuantityInStock")
+                    b.Property<int>("ItemId")
                         .HasColumnType("int");
-
-                    b.Property<int>("ReorderLevel")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("UnitPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("MedicineId");
+
+                    b.HasIndex("ItemId")
+                        .IsUnique();
 
                     b.ToTable("Medicines");
                 });
@@ -79,6 +123,40 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Roles", (string)null);
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.StockBatchEntity", b =>
+                {
+                    b.Property<int>("StockBatchId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StockBatchId"));
+
+                    b.Property<string>("BatchNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuantityInStock")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("StockBatchId");
+
+                    b.HasIndex("ItemId", "BatchNumber")
+                        .IsUnique();
+
+                    b.ToTable("StockBatches");
                 });
 
             modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.Supplier", b =>
@@ -158,6 +236,28 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.MedicineEntity", b =>
+                {
+                    b.HasOne("HealthcareInventoryManagementSystem.Domain.Entities.ItemEntity", "Item")
+                        .WithOne()
+                        .HasForeignKey("HealthcareInventoryManagementSystem.Domain.Entities.MedicineEntity", "ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.StockBatchEntity", b =>
+                {
+                    b.HasOne("HealthcareInventoryManagementSystem.Domain.Entities.ItemEntity", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Item");
                 });
 
             modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.UserEntity", b =>

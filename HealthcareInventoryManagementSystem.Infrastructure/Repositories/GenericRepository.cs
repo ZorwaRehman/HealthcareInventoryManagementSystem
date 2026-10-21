@@ -41,6 +41,16 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Repositories
             return await _dbSet.FirstOrDefaultAsync(predicate);
         }
 
+
+        // READ: Retrieve all records matching a condition.
+        public async Task<IEnumerable<T>> FindAllAsync(
+            Expression<Func<T, bool>> predicate)
+        {
+            return await _dbSet
+                .Where(predicate)
+                .ToListAsync();
+        }
+
         // CHECK: Check whether a matching record exists.
         public async Task<bool> ExistsAsync(
             Expression<Func<T, bool>> predicate)

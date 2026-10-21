@@ -16,6 +16,10 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces.Repositorie
         // matching a condition.
         Task<T?> FindAsync(Expression<Func<T, bool>> predicate);
 
+        // Retrieve all records matching a condition.
+        Task<IEnumerable<T>> FindAllAsync(
+            Expression<Func<T, bool>> predicate);
+
         // Determine whether a matching record exists.
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
 

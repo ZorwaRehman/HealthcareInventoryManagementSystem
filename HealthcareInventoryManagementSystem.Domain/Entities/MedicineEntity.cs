@@ -4,22 +4,17 @@ using System.Text;
 
 namespace HealthcareInventoryManagementSystem.Domain.Entities
 {
-    public class Medicine
+    public class MedicineEntity
     {
         public int MedicineId { get; set; }
 
-        public string Name { get; set; } = string.Empty;
+        // Links this medicine to its common inventory item.
+        public int ItemId { get; set; }
 
+        // Medicine-specific information.
         public string GenericName { get; set; } = string.Empty;
 
-        public string BatchNumber { get; set; } = string.Empty;
-
-        public DateTime ExpiryDate { get; set; }
-
-        public int QuantityInStock { get; set; }
-
-        public decimal UnitPrice { get; set; }
-
-        public int ReorderLevel { get; set; }
+        // Navigation property for the related inventory item.
+        public ItemEntity Item { get; set; } = null!;
     }
 }

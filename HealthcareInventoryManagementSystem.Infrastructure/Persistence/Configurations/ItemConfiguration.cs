@@ -20,6 +20,7 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Persistence.Configu
                 .HasMaxLength(150);
 
             builder.Property(item => item.Description)
+                .IsRequired(false)
                 .HasMaxLength(500);
 
             builder.Property(item => item.Category)

@@ -4,7 +4,12 @@ using System.Text;
 
 namespace HealthcareInventoryManagementSystem.Application.DTOs.Stocks
 {
-    internal class StockDto
+    // Holds stock information for an inventory item.
+    public class StockDto
     {
+        public int ItemId { get; set; }
+        public string ItemName { get; set; } = string.Empty;
+        public int TotalQuantity { get; set; }
+        public int ReorderLevel { get; set; }
     }
 }

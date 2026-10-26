@@ -1,4 +1,5 @@
-﻿using HealthcareInventoryManagementSystem.Application.Interfaces;
+﻿using HealthcareInventoryManagementSystem.Application.Mappings;
+using HealthcareInventoryManagementSystem.Application.Interfaces;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Repositories;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
 using HealthcareInventoryManagementSystem.Application.Services;
@@ -27,6 +28,11 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
+            // Register AutoMapper profiles
+            services.AddAutoMapper(
+                configuration => { },
+                typeof(MappingProfile).Assembly);
+
             // Register the generic repository for all entity types.
             services.AddScoped(
                 typeof(IGenericRepository<>),
@@ -34,6 +40,17 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection
 
             // Register the item service.
             services.AddScoped<IItemService, ItemService>();
+
+            // Register the stock management service.
+            services.AddScoped<IStockService, StockService>();
+
+            // Register the alert service.
+            services.AddScoped<IAlertService, AlertService>();
+
+            // Register the database transaction manager.
+            services.AddScoped<
+                IStockTransactionManager,
+                StockTransactionManager>();
 
             // Register the password-hashing service.
             services.AddScoped<IPasswordHasherService, PasswordHasherService>();

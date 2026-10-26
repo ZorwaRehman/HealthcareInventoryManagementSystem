@@ -158,6 +158,45 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Migrations
                     b.ToTable("StockBatches");
                 });
 
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.StockTransactionEntity", b =>
+                {
+                    b.Property<int>("StockTransactionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StockTransactionId"));
+
+                    b.Property<int>("NewQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PreviousQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("StockBatchId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("TransactionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TransactionType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("StockTransactionId");
+
+                    b.HasIndex("StockBatchId");
+
+                    b.ToTable("StockTransactions");
+                });
+
             modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.Supplier", b =>
                 {
                     b.Property<int>("SupplierId")
@@ -257,6 +296,17 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.StockTransactionEntity", b =>
+                {
+                    b.HasOne("HealthcareInventoryManagementSystem.Domain.Entities.StockBatchEntity", "StockBatch")
+                        .WithMany()
+                        .HasForeignKey("StockBatchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("StockBatch");
                 });
 
             modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.UserEntity", b =>

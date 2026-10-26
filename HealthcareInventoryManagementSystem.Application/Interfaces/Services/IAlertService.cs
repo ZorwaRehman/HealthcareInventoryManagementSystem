@@ -1,10 +1,16 @@
-﻿using System;
+
 using System.Collections.Generic;
-using System.Text;
+using System.Threading.Tasks;
+using HealthcareInventoryManagementSystem.Application.DTOs.Alerts;
 
 namespace HealthcareInventoryManagementSystem.Application.Interfaces.Services
 {
-    internal class IAlertService
+    public interface IAlertService
     {
+        Task<IEnumerable<AlertDto>> GetAllAlertsAsync();
+
+        Task<IEnumerable<AlertDto>> GetLowStockAlertsAsync();
+
+        Task<IEnumerable<AlertDto>> GetExpiryAlertsAsync();
     }
 }

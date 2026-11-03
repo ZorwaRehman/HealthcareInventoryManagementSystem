@@ -13,12 +13,14 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces.Repositorie
         // Retrieve all records.
         Task<IEnumerable<T>> GetAllAsync();
 
-        // matching a condition.
+        // Find one record matching a condition.
         Task<T?> FindAsync(Expression<Func<T, bool>> predicate);
 
-        // Retrieve all records matching a condition.
+        // Retrieve records matching a condition.
+        // Optional includes allow related entities to be loaded when needed.
         Task<IEnumerable<T>> FindAllAsync(
-            Expression<Func<T, bool>> predicate);
+            Expression<Func<T, bool>> predicate,
+            params Expression<Func<T, object>>[] includes);
 
         // Determine whether a matching record exists.
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
@@ -26,13 +28,13 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces.Repositorie
         // Add a new record.
         Task AddAsync(T entity);
 
-        // UPDATE
+        // Update an existing record.
         void Update(T entity);
 
         // Mark an existing record for deletion.
         void Delete(T entity);
 
-        //  Save Changes
+        // Save changes.
         Task SaveChangesAsync();
     }
 }

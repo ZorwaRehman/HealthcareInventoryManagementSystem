@@ -41,12 +41,23 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Repositories
             return await _dbSet.FirstOrDefaultAsync(predicate);
         }
 
-
-        // READ: Retrieve all records matching a condition.
+        // READ: Retrieve records matching a condition.
+        // Optional includes load related entities when needed.
         public async Task<IEnumerable<T>> FindAllAsync(
-            Expression<Func<T, bool>> predicate)
+            Expression<Func<T, bool>> predicate,
+            params Expression<Func<T, object>>[] includes)
         {
-            return await _dbSet
+            // Start with the database query.
+            IQueryable<T> query = _dbSet;
+
+            // Load each requested related entity.
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            // Apply the condition and execute the query.
+            return await query
                 .Where(predicate)
                 .ToListAsync();
         }
@@ -83,4 +94,3 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Repositories
         }
     }
 }
-

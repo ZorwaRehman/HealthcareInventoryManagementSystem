@@ -13,6 +13,7 @@ namespace HealthcareInventoryManagementSystem.Application.Services
         IGenericRepository<StockBatchEntity> stockBatchRepository,
         IGenericRepository<StockTransactionEntity> stockTransactionRepository,
         IGenericRepository<ItemEntity> itemRepository,
+        IGenericRepository<Supplier> supplierRepository,
         IStockTransactionManager transactionManager,
         IMapper mapper,
         ILogger<StockService> logger) : IStockService
@@ -108,6 +109,10 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 throw new ArgumentException(
                     "ItemId must be greater than zero.");
 
+            if (dto.SupplierId <= 0)
+                throw new ArgumentException(
+                    "SupplierId must be greater than zero.");
+
             if (string.IsNullOrWhiteSpace(dto.BatchNumber))
                 throw new ArgumentException(
                     "Batch number is required.");
@@ -139,6 +144,19 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 throw new KeyNotFoundException(
                     $"Item with ID {dto.ItemId} was not found.");
 
+            // Find the supplier selected for this stock batch.
+            var supplier = await supplierRepository.GetByIdAsync(dto.SupplierId);
+
+            // Make sure the supplier exists.
+            if (supplier is null)
+                throw new KeyNotFoundException(
+                    $"Supplier with ID {dto.SupplierId} was not found.");
+
+            // Only active suppliers can provide new stock.
+            if (!supplier.IsActive)
+                throw new InvalidOperationException(
+                    $"Supplier with ID {dto.SupplierId} is inactive.");
+
             var duplicate = await stockBatchRepository.ExistsAsync(
                 batch => batch.ItemId == dto.ItemId &&
                          batch.BatchNumber == batchNumber);
@@ -150,6 +168,8 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             var batch = new StockBatchEntity
             {
                 ItemId = dto.ItemId,
+                SupplierId = dto.SupplierId,
+                Supplier = supplier, // Keep the already-loaded supplier available for mapping.
                 BatchNumber = batchNumber,
                 ExpiryDate = dto.ExpiryDate,
                 QuantityInStock = dto.QuantityInStock,
@@ -394,7 +414,8 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 }
 
                 var batches = await stockBatchRepository.FindAllAsync(
-                    batch => batch.ItemId == itemId);
+                    batch => batch.ItemId == itemId,
+                    batch => batch.Supplier!); // Load supplier details with each batch.
 
                 var result = mapper.Map<List<StockBatchDto>>(batches);
 

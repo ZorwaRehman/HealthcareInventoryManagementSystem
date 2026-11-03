@@ -11,6 +11,12 @@ namespace HealthcareInventoryManagementSystem.Application.DTOs.Stocks
 
         public int ItemId { get; set; }
 
+        // Identifies the supplier who provided this batch.
+        public int? SupplierId { get; set; }
+
+        // Displays the supplier's name.
+        public string? SupplierName { get; set; }
+
         public string BatchNumber { get; set; } = string.Empty;
 
         public int QuantityInStock { get; set; }

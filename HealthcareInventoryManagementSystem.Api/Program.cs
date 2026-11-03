@@ -1,3 +1,4 @@
+using HealthcareInventoryManagementSystem.Api.Middlewares;
 using HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection;
 using Serilog;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -70,6 +71,12 @@ builder.Services.AddCors(options =>
     });
 });
 var app = builder.Build();
+
+// Handle exceptions from downstream middleware and API endpoints.
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+// Log incoming HTTP requests and their response details.
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

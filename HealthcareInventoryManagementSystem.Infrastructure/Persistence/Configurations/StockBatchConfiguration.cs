@@ -31,6 +31,12 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Persistence.Configu
                 .HasForeignKey(b => b.ItemId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Configure the relationship with Supplier.
+            builder.HasOne(b => b.Supplier)
+                .WithMany(s => s.StockBatches)
+                .HasForeignKey(b => b.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Prevent duplicate batch numbers for the same item.
             builder.HasIndex(b => new { b.ItemId, b.BatchNumber })
                 .IsUnique();

@@ -12,6 +12,9 @@ namespace HealthcareInventoryManagementSystem.Domain.Entities
         // Links this batch to its inventory item.
         public int ItemId { get; set; }
 
+        // Links this batch to the Supplier.
+        public int? SupplierId { get; set; }
+
         // Unique batch or lot number for the item.
         public string BatchNumber { get; set; } = string.Empty;
 
@@ -26,6 +29,9 @@ namespace HealthcareInventoryManagementSystem.Domain.Entities
 
         // Navigation property for the related item.
         public ItemEntity Item { get; set; } = null!;
+
+        // Navigation property for the related supplier.
+        public Supplier? Supplier { get; set; }
     }
 }
 

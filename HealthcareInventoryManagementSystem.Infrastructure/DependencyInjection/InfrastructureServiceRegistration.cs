@@ -1,8 +1,11 @@
-﻿using HealthcareInventoryManagementSystem.Application.Mappings;
+﻿using FluentValidation;
+using HealthcareInventoryManagementSystem.Application.DTOs.Suppliers;
+using HealthcareInventoryManagementSystem.Application.Mappings;
 using HealthcareInventoryManagementSystem.Application.Interfaces;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Repositories;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
 using HealthcareInventoryManagementSystem.Application.Services;
+using HealthcareInventoryManagementSystem.Application.Validators.Suppliers;
 using HealthcareInventoryManagementSystem.Infrastructure.Persistence;
 using HealthcareInventoryManagementSystem.Infrastructure.Repositories;
 using HealthcareInventoryManagementSystem.Infrastructure.Services;
@@ -28,7 +31,7 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(connectionString));
 
-            // Register AutoMapper profiles
+            // Register AutoMapper profiles.
             services.AddAutoMapper(
                 configuration => { },
                 typeof(MappingProfile).Assembly);
@@ -47,6 +50,14 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection
             // Register the alert service.
             services.AddScoped<IAlertService, AlertService>();
 
+            // Register the supplier management service.
+            services.AddScoped<ISupplierService, SupplierService>();
+
+            // Register the Supplier request validator.
+            services.AddScoped<
+                IValidator<SupplierRequestDto>,
+                SupplierDtoValidator>();
+
             // Register the database transaction manager.
             services.AddScoped<
                 IStockTransactionManager,
@@ -55,12 +66,12 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection
             // Register the password-hashing service.
             services.AddScoped<IPasswordHasherService, PasswordHasherService>();
 
-
-            // Register the JWT Service
+            // Register the JWT service.
             services.AddScoped<ITokenService, JwtTokenService>();
 
             // Register the authentication service.
             services.AddScoped<IAuthService, AuthService>();
+
             return services;
         }
     }

@@ -61,6 +61,9 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Persistence
 
             // Configure Item entity.
             modelBuilder.ApplyConfiguration(new ItemConfiguration());
+
+            // Configure Supplier entity.
+            modelBuilder.ApplyConfiguration(new SupplierConfiguration());
         }
     }
 }

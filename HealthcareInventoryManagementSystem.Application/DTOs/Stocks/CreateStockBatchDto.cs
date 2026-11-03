@@ -13,6 +13,11 @@ namespace HealthcareInventoryManagementSystem.Application.DTOs.Stocks
         [Range(1, int.MaxValue)]
         public int ItemId { get; set; }
 
+        // Identifies the supplier providing this stock batch.
+        [Required]
+        [Range(1, int.MaxValue)]
+        public int SupplierId { get; set; }
+
         [Required]
         [StringLength(100)]
         public string BatchNumber { get; set; } = string.Empty;

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using HealthcareInventoryManagementSystem.Application.DTOs.Stocks;
+using HealthcareInventoryManagementSystem.Application.DTOs.Suppliers;
 using HealthcareInventoryManagementSystem.Domain.Entities;
 
 namespace HealthcareInventoryManagementSystem.Application.Mappings
@@ -24,12 +25,24 @@ namespace HealthcareInventoryManagementSystem.Application.Mappings
                     destination => destination.ReorderLevel,
                     options => options.MapFrom(source => source.Item.ReorderLevel));
 
-            // Maps a stock batch to its detailed response DTO.
             // Includes batch number, quantity, unit price, and expiry date.
-            CreateMap<StockBatchEntity, StockBatchDto>();
+            // Maps a stock batch to its detailed response DTO.
+            CreateMap<StockBatchEntity, StockBatchDto>()
+                .ForMember(
+                    destination => destination.SupplierName,
+                    options => options.MapFrom(
+                        source => source.Supplier != null
+                            ? source.Supplier.Name
+                            : null));
 
             // Maps a stock transaction entity to its response DTO.
             CreateMap<StockTransactionEntity, StockTransactionDto>();
+
+            // Maps a Supplier entity to the response DTO.
+            CreateMap<Supplier, SupplierDto>();
+
+            // Maps supplier request data to a Supplier entity.
+            CreateMap<SupplierRequestDto, Supplier>();
         }
     }
 }

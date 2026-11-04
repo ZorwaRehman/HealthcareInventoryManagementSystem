@@ -1,4 +1,5 @@
-﻿using HealthcareInventoryManagementSystem.Application.Dtos;
+﻿
+using HealthcareInventoryManagementSystem.Application.Dtos;
 using HealthcareInventoryManagementSystem.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,6 +11,18 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
     {
         private readonly IItemService _itemService;
 
+        // Maximum image size: 5 MB.
+        private const long MaxImageSize = 5 * 1024 * 1024;
+
+        // Allowed image extensions.
+        private static readonly string[] AllowedExtensions =
+        {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp"
+        };
+
         public ItemsController(IItemService itemService)
         {
             _itemService = itemService;
@@ -20,6 +33,7 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
         public async Task<IActionResult> GetAllItems()
         {
             var items = await _itemService.GetAllItemsAsync();
+
             return Ok(items);
         }
 
@@ -54,17 +68,37 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
             }
 
             var items = await _itemService.SearchItemsAsync(name);
+
             return Ok(items);
         }
 
         // POST: api/Items
         [HttpPost]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> CreateItem(
-            [FromBody] ItemRequestDto request)
+            [FromForm] ItemRequestDto request,
+            IFormFile? image)
         {
             try
             {
-                var item = await _itemService.CreateItemAsync(request);
+                // Validate the uploaded image.
+                var validationError = ValidateImage(image);
+
+                if (validationError != null)
+                {
+                    return BadRequest(new
+                    {
+                        message = validationError
+                    });
+                }
+
+                // Open the image stream if an image was selected.
+                using var imageStream = image?.OpenReadStream();
+
+                var item = await _itemService.CreateItemAsync(
+                    request,
+                    imageStream,
+                    image?.FileName);
 
                 return CreatedAtAction(
                     nameof(GetItemById),
@@ -79,13 +113,33 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
 
         // PUT: api/Items/5
         [HttpPut("{id:int}")]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> UpdateItem(
             int id,
-            [FromBody] ItemRequestDto request)
+            [FromForm] ItemRequestDto request,
+            IFormFile? image)
         {
             try
             {
-                var item = await _itemService.UpdateItemAsync(id, request);
+                // Validate the uploaded image.
+                var validationError = ValidateImage(image);
+
+                if (validationError != null)
+                {
+                    return BadRequest(new
+                    {
+                        message = validationError
+                    });
+                }
+
+                // Open the image stream if a new image was selected.
+                using var imageStream = image?.OpenReadStream();
+
+                var item = await _itemService.UpdateItemAsync(
+                    id,
+                    request,
+                    imageStream,
+                    image?.FileName);
 
                 if (item == null)
                 {
@@ -119,6 +173,51 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
 
             return NoContent();
         }
+
+        // Validate an optional uploaded image.
+        private static string? ValidateImage(IFormFile? image)
+        {
+            // Image is optional.
+            if (image == null)
+            {
+                return null;
+            }
+
+            if (image.Length == 0)
+            {
+                return "The selected image is empty.";
+            }
+
+            // Check image size.
+            if (image.Length > MaxImageSize)
+            {
+                return "Image size cannot exceed 5 MB.";
+            }
+
+            // Check file extension.
+            var extension = Path.GetExtension(image.FileName)
+                .ToLowerInvariant();
+
+            if (!AllowedExtensions.Contains(extension))
+            {
+                return "Only JPG, JPEG, PNG, and WEBP images are allowed.";
+            }
+
+            // Check the declared content type.
+            var allowedContentTypes = new[]
+            {
+                "image/jpeg",
+                "image/png",
+                "image/webp"
+            };
+
+            if (!allowedContentTypes.Contains(
+                image.ContentType.ToLowerInvariant()))
+            {
+                return "Invalid image content type.";
+            }
+
+            return null;
+        }
     }
 }
-

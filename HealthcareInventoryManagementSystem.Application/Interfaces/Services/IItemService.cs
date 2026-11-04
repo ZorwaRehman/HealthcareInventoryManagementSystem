@@ -1,4 +1,6 @@
-﻿using HealthcareInventoryManagementSystem.Application.Dtos;
+﻿using System.IO;
+using HealthcareInventoryManagementSystem.Application.Dtos;
+using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
 
 namespace HealthcareInventoryManagementSystem.Application.Interfaces
 {
@@ -13,14 +15,20 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces
         // Search for an item by name.
         Task<IEnumerable<ItemDto>> SearchItemsAsync(string name);
 
-        // Create a new item.
-        Task<ItemDto> CreateItemAsync(ItemRequestDto request);
+        // Create a new item with an optional image.
+        Task<ItemDto> CreateItemAsync(
+            ItemRequestDto request,
+            Stream? imageStream = null,
+            string? imageFileName = null);
 
-        // Update an existing item.
-        Task<ItemDto?> UpdateItemAsync(int id, ItemRequestDto request);
+        // Update an existing item with an optional replacement image.
+        Task<ItemDto?> UpdateItemAsync(
+            int id,
+            ItemRequestDto request,
+            Stream? imageStream = null,
+            string? imageFileName = null);
 
-        // Delete an item.
+        // Delete an item and its associated image.
         Task<bool> DeleteItemAsync(int id);
     }
 }
-

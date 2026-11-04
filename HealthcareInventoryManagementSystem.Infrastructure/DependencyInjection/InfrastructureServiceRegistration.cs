@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿
+using FluentValidation;
 using HealthcareInventoryManagementSystem.Application.DTOs.Suppliers;
 using HealthcareInventoryManagementSystem.Application.Mappings;
 using HealthcareInventoryManagementSystem.Application.Interfaces;
@@ -43,6 +44,11 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection
 
             // Register the item service.
             services.AddScoped<IItemService, ItemService>();
+
+            // Register the item image storage service.
+            services.AddScoped<
+                IItemImageStorageService,
+                ItemImageStorageService>();
 
             // Register the stock management service.
             services.AddScoped<IStockService, StockService>();

@@ -23,5 +23,8 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces.Services
 
         // Deactivate a supplier without permanently deleting its record.
         Task<bool> DeactivateSupplierAsync(int supplierId);
+
+        // Reactivate an inactive supplier.
+        Task<bool> ReactivateSupplierAsync(int supplierId);
     }
 }

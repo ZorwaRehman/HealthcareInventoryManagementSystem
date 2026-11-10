@@ -136,5 +136,37 @@ namespace HealthcareInventoryManagementSystem.Application.Services
 
             return true;
         }
+
+        // Reactivate an inactive supplier.
+        public async Task<bool> ReactivateSupplierAsync(int supplierId)
+        {
+            var supplier = await _supplierRepository.GetByIdAsync(supplierId);
+
+            if (supplier == null)
+            {
+                _logger.LogWarning(
+                    "Supplier with ID {SupplierId} was not found for reactivation.",
+                    supplierId);
+
+                return false;
+            }
+
+            if (supplier.IsActive)
+            {
+                return true;
+            }
+
+            supplier.IsActive = true;
+            supplier.UpdatedAt = DateTime.UtcNow;
+
+            _supplierRepository.Update(supplier);
+            await _supplierRepository.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Supplier with ID {SupplierId} was reactivated successfully.",
+                supplierId);
+
+            return true;
+        }
     }
 }

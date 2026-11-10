@@ -443,5 +443,31 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 throw;
             }
         }
+
+        // Returns all stock batches across every inventory item.
+        public async Task<IReadOnlyList<StockBatchDto>> GetAllBatchesAsync()
+        {
+            try
+            {
+                // Retrieve all batches and their associated suppliers.
+                var batches = await stockBatchRepository.FindAllAsync(
+                    batch => true,
+                    batch => batch.Supplier!);
+
+                // Convert batch entities into DTOs.
+                var result = mapper.Map<List<StockBatchDto>>(batches);
+
+                logger.LogInformation(
+                    "Retrieved {BatchCount} stock batches.",
+                    result.Count);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to retrieve all stock batches.");
+                throw;
+            }
+        }
     }
 }

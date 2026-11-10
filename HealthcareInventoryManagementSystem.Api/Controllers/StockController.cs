@@ -19,6 +19,15 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
             return Ok(stock);
         }
 
+        // GET: api/Stock/batches
+        // Returns all stock batches across every inventory item.
+        [HttpGet("batches")]
+        public async Task<IActionResult> GetAllBatches()
+        {
+            var batches = await stockService.GetAllBatchesAsync();
+            return Ok(batches);
+        }
+
         // GET: api/Stock/item/1
         // Returns the stock summary for a specific item.
         [HttpGet("item/{itemId:int}")]

@@ -24,6 +24,9 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces.Services
         // Gets all stock batches belonging to a specific item.
         Task<IReadOnlyList<StockBatchDto>> GetBatchesByItemIdAsync(int itemId);
 
+        // Gets all stock batches across every inventory item.
+        Task<IReadOnlyList<StockBatchDto>> GetAllBatchesAsync();
+
         // Creates a new stock batch for an inventory item.
         Task<StockBatchDto> CreateStockBatchAsync(CreateStockBatchDto dto);
 

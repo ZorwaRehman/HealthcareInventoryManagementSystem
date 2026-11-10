@@ -105,5 +105,25 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
 
             return NoContent();
         }
+
+        // PATCH: api/Suppliers/5/reactivate
+        [HttpPatch("{id:int}/reactivate")]
+        public async Task<IActionResult> ReactivateSupplier(int id)
+        {
+            var reactivated = await _supplierService.ReactivateSupplierAsync(id);
+
+            if (!reactivated)
+            {
+                return NotFound(new
+                {
+                    message = $"Supplier with ID {id} was not found."
+                });
+            }
+
+            return Ok(new
+            {
+                message = "Supplier reactivated successfully."
+            });
+        }
     }
 }

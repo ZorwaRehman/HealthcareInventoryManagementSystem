@@ -1,4 +1,5 @@
-﻿
+﻿using HealthcareInventoryManagementSystem.Application.DTOs.PurchaseOrders;
+using HealthcareInventoryManagementSystem.Application.Validators.PurchaseOrders;
 using FluentValidation;
 using HealthcareInventoryManagementSystem.Application.DTOs.Suppliers;
 using HealthcareInventoryManagementSystem.Application.Mappings;
@@ -14,6 +15,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using HealthcareInventoryManagementSystem.Application.DTOs.GoodsReceived;
+using HealthcareInventoryManagementSystem.Application.Validators;
 
 namespace HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection
 {
@@ -59,10 +62,26 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection
             // Register the supplier management service.
             services.AddScoped<ISupplierService, SupplierService>();
 
+            // Register the Purchase Order management service.
+            services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
+
+            // Register the Goods Received management service.
+            services.AddScoped<IGoodsReceivedService, GoodsReceivedService>();
+
             // Register the Supplier request validator.
             services.AddScoped<
                 IValidator<SupplierRequestDto>,
                 SupplierDtoValidator>();
+
+            // Register the Purchase Order request validator.
+            services.AddScoped<
+                IValidator<PurchaseOrderRequestDto>,
+                PurchaseOrderRequestDtoValidator>();
+
+            // Register the Goods Received request validator.
+            services.AddScoped<
+                IValidator<CreateGoodsReceivedRequestDto>,
+                GoodsReceivedRequestValidator>();
 
             // Register the database transaction manager.
             services.AddScoped<

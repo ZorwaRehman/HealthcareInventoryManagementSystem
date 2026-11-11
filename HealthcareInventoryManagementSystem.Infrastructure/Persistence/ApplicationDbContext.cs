@@ -32,6 +32,17 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Persistence
 
         public DbSet<RoleEntity> Roles { get; set; }
 
+        // Stores purchase orders.
+        public DbSet<PurchaseOrderEntity> PurchaseOrders
+            => Set<PurchaseOrderEntity>();
+
+        // Stores individual items belonging to purchase orders.
+        public DbSet<PurchaseOrderItemEntity> PurchaseOrderItems
+            => Set<PurchaseOrderItemEntity>();
+
+        // Goods Received document and its individual item details.
+        public DbSet<GoodsReceivedEntity> GoodsReceived => Set<GoodsReceivedEntity>();
+        public DbSet<GoodsReceivedItemEntity> GoodsReceivedItems => Set<GoodsReceivedItemEntity>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -64,6 +75,18 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Persistence
 
             // Configure Supplier entity.
             modelBuilder.ApplyConfiguration(new SupplierConfiguration());
+
+            // Configure Purchase Order entity.
+            modelBuilder.ApplyConfiguration(
+                new PurchaseOrderConfiguration());
+
+            // Configure Purchase Order Item entity.
+            modelBuilder.ApplyConfiguration(
+                new PurchaseOrderItemConfiguration());
+
+            // Apply Goods Received database configurations.
+            modelBuilder.ApplyConfiguration(new GoodsReceivedConfiguration());
+            modelBuilder.ApplyConfiguration(new GoodsReceivedItemConfiguration());
         }
     }
 }

@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
+﻿
 namespace HealthcareInventoryManagementSystem.Application.DTOs.Stocks
 {
     // Contains the information required to adjust a stock batch.
@@ -12,7 +9,11 @@ namespace HealthcareInventoryManagementSystem.Application.DTOs.Stocks
         // Expected values: StockIn, StockOut, or Adjustment.
         public string TransactionType { get; set; } = string.Empty;
 
+        // Used for StockIn and StockOut.
         public int Quantity { get; set; }
+
+        // Used for Adjustment: the actual physical quantity counted.
+        public int? PhysicalQuantity { get; set; }
 
         public string? Reason { get; set; }
     }

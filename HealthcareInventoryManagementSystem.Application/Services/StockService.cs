@@ -213,7 +213,7 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             return mapper.Map<StockBatchDto>(batch);
         }
 
-        // Adds stock, removes stock, or sets an adjusted stock quantity.
+        // Adds stock, removes stock, or adjusts stock to the physical count.
         public async Task AdjustStockAsync(StockAdjustmentDto dto)
         {
             ArgumentNullException.ThrowIfNull(dto);
@@ -224,10 +224,6 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                     throw new ArgumentException(
                         "StockBatchId must be greater than zero.");
 
-                if (dto.Quantity < 0)
-                    throw new ArgumentException(
-                        "Quantity cannot be negative.");
-
                 var transactionType = dto.TransactionType?.Trim();
 
                 if (transactionType is not
@@ -237,9 +233,31 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                         "TransactionType must be StockIn, StockOut, or Adjustment.");
                 }
 
-                if (transactionType != "Adjustment" && dto.Quantity == 0)
-                    throw new ArgumentException(
-                        "Quantity must be greater than zero for StockIn or StockOut.");
+                // Validate the quantity based on the transaction type.
+                if (transactionType == "Adjustment")
+                {
+                    if (!dto.PhysicalQuantity.HasValue)
+                        throw new ArgumentException(
+                            "Physical quantity is required for stock adjustment.");
+
+                    if (dto.PhysicalQuantity.Value < 0)
+                        throw new ArgumentException(
+                            "Physical quantity cannot be negative.");
+
+                    if (string.IsNullOrWhiteSpace(dto.Reason))
+                        throw new ArgumentException(
+                            "A reason is required for stock adjustment.");
+                }
+                else
+                {
+                    if (dto.Quantity <= 0)
+                        throw new ArgumentException(
+                            "Quantity must be greater than zero for StockIn or StockOut.");
+
+                    if (dto.PhysicalQuantity.HasValue)
+                        throw new ArgumentException(
+                            "Physical quantity is only allowed for Adjustment.");
+                }
 
                 if (dto.Reason?.Length > 500)
                     throw new ArgumentException(
@@ -256,12 +274,15 @@ namespace HealthcareInventoryManagementSystem.Application.Services
 
                     var previousQuantity = batch.QuantityInStock;
                     int newQuantity;
+                    int transactionQuantity;
 
                     switch (transactionType)
                     {
                         case "StockIn":
                             newQuantity = checked(
                                 previousQuantity + dto.Quantity);
+
+                            transactionQuantity = dto.Quantity;
                             break;
 
                         case "StockOut":
@@ -270,14 +291,24 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                                     "Insufficient stock. Stock cannot become negative.");
 
                             newQuantity = previousQuantity - dto.Quantity;
+                            transactionQuantity = dto.Quantity;
                             break;
 
                         case "Adjustment":
-                            newQuantity = checked(previousQuantity + dto.Quantity);
+                            // Calculate the difference using the actual physical count.
+                            transactionQuantity =
+                                dto.PhysicalQuantity!.Value - previousQuantity;
+
+                            // Do not create a transaction if the quantity is unchanged.
+                            if (transactionQuantity == 0)
+                                return;
+
+                            newQuantity = dto.PhysicalQuantity.Value;
                             break;
 
                         default:
-                            throw new ArgumentException("Invalid transaction type.");
+                            throw new ArgumentException(
+                                "Invalid transaction type.");
                     }
 
                     batch.QuantityInStock = newQuantity;
@@ -287,10 +318,10 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                     {
                         StockBatchId = batch.StockBatchId,
                         TransactionType = transactionType,
-                        Quantity = dto.Quantity,
+                        Quantity = transactionQuantity,
                         PreviousQuantity = previousQuantity,
                         NewQuantity = newQuantity,
-                        Reason = dto.Reason,
+                        Reason = dto.Reason?.Trim(),
                         TransactionDate = DateTime.UtcNow
                     };
 

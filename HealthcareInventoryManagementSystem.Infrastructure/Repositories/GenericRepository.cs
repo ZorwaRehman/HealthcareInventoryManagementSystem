@@ -62,6 +62,28 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Repositories
                 .ToListAsync();
         }
 
+
+        // Retrieve records with nested related entities.
+        public async Task<IEnumerable<T>> FindAllWithNestedIncludesAsync(
+            Expression<Func<T, bool>> predicate,
+            params string[] includes)
+        {
+            // Start with the database query.
+            IQueryable<T> query = _dbSet;
+
+            // Load related entities, including nested relationships.
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            // Apply the condition and execute the query.
+            return await query
+                .Where(predicate)
+                .ToListAsync();
+        }
+
+
         // CHECK: Check whether a matching record exists.
         public async Task<bool> ExistsAsync(
             Expression<Func<T, bool>> predicate)

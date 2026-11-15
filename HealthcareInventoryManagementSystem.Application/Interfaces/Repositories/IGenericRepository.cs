@@ -22,6 +22,11 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces.Repositorie
             Expression<Func<T, bool>> predicate,
             params Expression<Func<T, object>>[] includes);
 
+        // Retrieve records with nested related entities.
+        Task<IEnumerable<T>> FindAllWithNestedIncludesAsync(
+            Expression<Func<T, bool>> predicate,
+            params string[] includes);
+
         // Determine whether a matching record exists.
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
 

@@ -1,10 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
+﻿
 namespace HealthcareInventoryManagementSystem.Domain.Enums
 {
-    internal class PurchaseOrderStatus
+    public enum PurchaseOrderStatus
     {
+        Draft = 1,
+        Submitted = 2,
+        Approved = 3,
+        Ordered = 4,
+        PartiallyReceived = 5,
+        Received = 6,
+        Cancelled = 7
     }
 }

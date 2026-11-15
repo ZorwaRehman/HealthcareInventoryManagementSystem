@@ -22,6 +22,111 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.GoodsReceivedEntity", b =>
+                {
+                    b.Property<int>("GoodsReceivedId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GoodsReceivedId"));
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeliveryNoteNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("PurchaseOrderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReceiptNumber")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<DateTime>("ReceivedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("GoodsReceivedId");
+
+                    b.HasIndex("PurchaseOrderId");
+
+                    b.HasIndex("ReceiptNumber")
+                        .IsUnique();
+
+                    b.HasIndex("ReceivedDate");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("GoodsReceived", (string)null);
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.GoodsReceivedItemEntity", b =>
+                {
+                    b.Property<int>("GoodsReceivedItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("GoodsReceivedItemId"));
+
+                    b.Property<int>("AcceptedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("BatchNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("DeliveredQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("GoodsReceivedId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ManufactureDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PurchaseOrderItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuarantinedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RejectedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("StockBatchId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StorageLocation")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("GoodsReceivedItemId");
+
+                    b.HasIndex("GoodsReceivedId");
+
+                    b.HasIndex("PurchaseOrderItemId");
+
+                    b.HasIndex("StockBatchId");
+
+                    b.ToTable("GoodsReceivedItems", (string)null);
+                });
+
             modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.ItemEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -101,6 +206,114 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Medicines");
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.PurchaseOrderEntity", b =>
+                {
+                    b.Property<int>("PurchaseOrderId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PurchaseOrderId"));
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ExpectedDeliveryDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OrderNumber")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("SupplierId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TaxRate")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("PurchaseOrderId");
+
+                    b.HasIndex("OrderDate");
+
+                    b.HasIndex("OrderNumber")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SupplierId");
+
+                    b.ToTable("PurchaseOrders", (string)null);
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.PurchaseOrderItemEntity", b =>
+                {
+                    b.Property<int>("PurchaseOrderItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PurchaseOrderItemId"));
+
+                    b.Property<int>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("LineTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("OrderedQuantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PurchaseOrderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReceivedQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("PurchaseOrderItemId");
+
+                    b.HasIndex("ItemId");
+
+                    b.HasIndex("PurchaseOrderId", "ItemId")
+                        .IsUnique();
+
+                    b.ToTable("PurchaseOrderItems", (string)null);
                 });
 
             modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.RoleEntity", b =>
@@ -318,6 +531,43 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.GoodsReceivedEntity", b =>
+                {
+                    b.HasOne("HealthcareInventoryManagementSystem.Domain.Entities.PurchaseOrderEntity", "PurchaseOrder")
+                        .WithMany()
+                        .HasForeignKey("PurchaseOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("PurchaseOrder");
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.GoodsReceivedItemEntity", b =>
+                {
+                    b.HasOne("HealthcareInventoryManagementSystem.Domain.Entities.GoodsReceivedEntity", "GoodsReceived")
+                        .WithMany("Items")
+                        .HasForeignKey("GoodsReceivedId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HealthcareInventoryManagementSystem.Domain.Entities.PurchaseOrderItemEntity", "PurchaseOrderItem")
+                        .WithMany()
+                        .HasForeignKey("PurchaseOrderItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HealthcareInventoryManagementSystem.Domain.Entities.StockBatchEntity", "StockBatch")
+                        .WithMany()
+                        .HasForeignKey("StockBatchId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("GoodsReceived");
+
+                    b.Navigation("PurchaseOrderItem");
+
+                    b.Navigation("StockBatch");
+                });
+
             modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.MedicineEntity", b =>
                 {
                     b.HasOne("HealthcareInventoryManagementSystem.Domain.Entities.ItemEntity", "Item")
@@ -327,6 +577,36 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Item");
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.PurchaseOrderEntity", b =>
+                {
+                    b.HasOne("HealthcareInventoryManagementSystem.Domain.Entities.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Supplier");
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.PurchaseOrderItemEntity", b =>
+                {
+                    b.HasOne("HealthcareInventoryManagementSystem.Domain.Entities.ItemEntity", "Item")
+                        .WithMany()
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("HealthcareInventoryManagementSystem.Domain.Entities.PurchaseOrderEntity", "PurchaseOrder")
+                        .WithMany("Items")
+                        .HasForeignKey("PurchaseOrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Item");
+
+                    b.Navigation("PurchaseOrder");
                 });
 
             modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.StockBatchEntity", b =>
@@ -367,6 +647,16 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.GoodsReceivedEntity", b =>
+                {
+                    b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.PurchaseOrderEntity", b =>
+                {
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.RoleEntity", b =>

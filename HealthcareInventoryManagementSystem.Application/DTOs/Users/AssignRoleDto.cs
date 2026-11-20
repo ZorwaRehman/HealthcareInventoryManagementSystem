@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace HealthcareInventoryManagementSystem.Application.DTOs.Users
+﻿namespace HealthcareInventoryManagementSystem.Application.DTOs.Users
 {
-    internal class AssignRoleDto
+    public class AssignRoleDto
     {
+        public int RoleId { get; set; }
     }
 }

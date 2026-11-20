@@ -35,6 +35,8 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Persistence
         // Stores purchase orders.
         public DbSet<PurchaseOrderEntity> PurchaseOrders
             => Set<PurchaseOrderEntity>();
+        public DbSet<PurchaseOrderDailySequenceEntity> PurchaseOrderDailySequences
+            => Set<PurchaseOrderDailySequenceEntity>();
 
         // Stores individual items belonging to purchase orders.
         public DbSet<PurchaseOrderItemEntity> PurchaseOrderItems
@@ -83,6 +85,10 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Persistence
             // Configure Purchase Order Item entity.
             modelBuilder.ApplyConfiguration(
                 new PurchaseOrderItemConfiguration());
+
+            // Configure daily Purchase Order numbering.
+            modelBuilder.ApplyConfiguration(
+                new PurchaseOrderDailySequenceConfiguration());
 
             // Apply Goods Received database configurations.
             modelBuilder.ApplyConfiguration(new GoodsReceivedConfiguration());

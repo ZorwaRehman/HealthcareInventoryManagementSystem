@@ -208,6 +208,19 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Migrations
                     b.ToTable("Medicines");
                 });
 
+            modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.PurchaseOrderDailySequenceEntity", b =>
+                {
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("LastSequence")
+                        .HasColumnType("int");
+
+                    b.HasKey("OrderDate");
+
+                    b.ToTable("PurchaseOrderDailySequences", (string)null);
+                });
+
             modelBuilder.Entity("HealthcareInventoryManagementSystem.Domain.Entities.PurchaseOrderEntity", b =>
                 {
                     b.Property<int>("PurchaseOrderId")

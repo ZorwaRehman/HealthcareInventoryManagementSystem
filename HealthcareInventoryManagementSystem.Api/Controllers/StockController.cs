@@ -108,6 +108,39 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
             }
         }
 
+        // PUT: api/Stock/batches/1/batch-number
+        // Updates the batch number of an existing stock batch.
+        [HttpPut("batches/{stockBatchId:int}/batch-number")]
+        public async Task<IActionResult> UpdateStockBatchNumber(
+            int stockBatchId,
+            [FromBody] UpdateStockBatchNumberDto dto)
+        {
+            try
+            {
+                await stockService.UpdateStockBatchNumberAsync(
+                    stockBatchId,
+                    dto.BatchNumber);
+
+                return Ok(new
+                {
+                    message = "Stock batch number updated successfully."
+                });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    message = ex.Message
+                });
+            }
+        }
 
         // GET: api/Stock/batch/1/transactions
         // Returns transaction history for a stock batch.

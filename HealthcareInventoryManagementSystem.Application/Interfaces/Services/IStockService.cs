@@ -30,5 +30,7 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces.Services
         // Creates a new stock batch for an inventory item.
         Task<StockBatchDto> CreateStockBatchAsync(CreateStockBatchDto dto);
 
+        // Updates the batch number of an existing stock batch.
+        Task UpdateStockBatchNumberAsync(int stockBatchId, string batchNumber);
     }
 }

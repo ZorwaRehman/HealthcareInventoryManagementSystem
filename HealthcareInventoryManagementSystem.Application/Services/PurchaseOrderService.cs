@@ -21,6 +21,9 @@ namespace HealthcareInventoryManagementSystem.Application.Services
         private readonly IGenericRepository<Supplier> _supplierRepository;
         private readonly IGenericRepository<ItemEntity> _itemRepository;
 
+        // Generates sequential Purchase Order numbers using Pakistan local date.
+        private readonly IPurchaseOrderNumberGenerator _purchaseOrderNumberGenerator;
+
         private readonly IMapper _mapper;
         private readonly IValidator<PurchaseOrderRequestDto> _validator;
         private readonly ILogger<PurchaseOrderService> _logger;
@@ -32,7 +35,8 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             IGenericRepository<ItemEntity> itemRepository,
             IMapper mapper,
             IValidator<PurchaseOrderRequestDto> validator,
-            ILogger<PurchaseOrderService> logger)
+            ILogger<PurchaseOrderService> logger,
+            IPurchaseOrderNumberGenerator purchaseOrderNumberGenerator)
         {
             _purchaseOrderRepository = purchaseOrderRepository;
             _purchaseOrderItemRepository = purchaseOrderItemRepository;
@@ -41,6 +45,7 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             _mapper = mapper;
             _validator = validator;
             _logger = logger;
+            _purchaseOrderNumberGenerator = purchaseOrderNumberGenerator;
         }
 
         // Retrieve all purchase orders with their related information.
@@ -100,7 +105,6 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             // Create the purchase order entity.
             var purchaseOrder = new PurchaseOrderEntity
             {
-                OrderNumber = GenerateOrderNumber(),
                 SupplierId = request.SupplierId,
                 Supplier = supplier,
                 OrderDate = request.OrderDate,
@@ -143,6 +147,10 @@ namespace HealthcareInventoryManagementSystem.Application.Services
 
             // Calculate the order amounts on the backend.
             CalculateOrderTotals(purchaseOrder);
+
+            // Generate the next sequential Purchase Order number.
+            purchaseOrder.OrderNumber =
+                await _purchaseOrderNumberGenerator.GenerateNextNumberAsync();
 
             // Add the purchase order and its items.
             await _purchaseOrderRepository.AddAsync(purchaseOrder);
@@ -403,12 +411,6 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 purchaseOrderId);
 
             return true;
-        }
-
-        // Generate a unique purchase order number.
-        private static string GenerateOrderNumber()
-        {
-            return $"PO-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
         }
 
         // Calculate subtotal, tax amount and total amount on the backend.

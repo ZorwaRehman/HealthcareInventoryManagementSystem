@@ -500,5 +500,59 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 throw;
             }
         }
+
+        // Updates the batch number of an existing stock batch.
+        public async Task UpdateStockBatchNumberAsync(
+            int stockBatchId,
+            string batchNumber)
+        {
+            if (stockBatchId <= 0)
+                throw new ArgumentException(
+                    "StockBatchId must be greater than zero.");
+
+            if (string.IsNullOrWhiteSpace(batchNumber))
+                throw new ArgumentException(
+                    "Batch number is required.");
+
+            batchNumber = batchNumber.Trim();
+
+            if (batchNumber.Length > 100)
+                throw new ArgumentException(
+                    "Batch number cannot exceed 100 characters.");
+
+            await transactionManager.ExecuteInTransactionAsync(async () =>
+            {
+                // Find the existing batch.
+                var batch = await stockBatchRepository.GetByIdAsync(stockBatchId);
+
+                if (batch is null)
+                    throw new KeyNotFoundException(
+                        $"Stock batch {stockBatchId} was not found.");
+
+                // Check whether another batch for the same item
+                // already uses the requested batch number.
+                var duplicate = await stockBatchRepository.ExistsAsync(
+                    existing =>
+                        existing.ItemId == batch.ItemId &&
+                        existing.BatchNumber == batchNumber &&
+                        existing.StockBatchId != stockBatchId);
+
+                if (duplicate)
+                    throw new ArgumentException(
+                        "This batch number already exists for the selected item.");
+
+                // Change only the batch number.
+                batch.BatchNumber = batchNumber;
+
+                stockBatchRepository.Update(batch);
+
+                await stockBatchRepository.SaveChangesAsync();
+            });
+
+            logger.LogInformation(
+                "Updated batch number for stock batch {StockBatchId} to {BatchNumber}.",
+                stockBatchId,
+                batchNumber);
+        }
     }
 }

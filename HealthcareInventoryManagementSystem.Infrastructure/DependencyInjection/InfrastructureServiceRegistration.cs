@@ -62,6 +62,11 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection
             // Register the supplier management service.
             services.AddScoped<ISupplierService, SupplierService>();
 
+            // Register the Purchase Order number generator.
+            services.AddScoped<
+                IPurchaseOrderNumberGenerator,
+                PurchaseOrderNumberGenerator>();
+
             // Register the Purchase Order management service.
             services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 
@@ -96,6 +101,10 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection
 
             // Register the authentication service.
             services.AddScoped<IAuthService, AuthService>();
+
+            // Register the User Management service.
+            services.AddScoped<IUserService, UserService>();
+
 
             return services;
         }

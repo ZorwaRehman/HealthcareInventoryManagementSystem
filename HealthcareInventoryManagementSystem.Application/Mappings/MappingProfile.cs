@@ -103,7 +103,14 @@ namespace HealthcareInventoryManagementSystem.Application.Mappings
                 .ForMember(
                     destination => destination.SKU,
                     options => options.MapFrom(
-                        source => source.PurchaseOrderItem.Item.SKU));
+                        source => source.PurchaseOrderItem.Item.SKU))
+                // Return the current stock batch number when a stock batch exists.
+                .ForMember(
+                    destination => destination.BatchNumber,
+                    options => options.MapFrom(
+                        source => source.StockBatch != null
+                            ? source.StockBatch.BatchNumber
+                            : source.BatchNumber));
         }
     }
 }

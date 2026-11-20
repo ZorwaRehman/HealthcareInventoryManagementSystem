@@ -1,10 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace HealthcareInventoryManagementSystem.Application.DTOs.Users
+﻿namespace HealthcareInventoryManagementSystem.Application.DTOs.Users
 {
-    internal class UserDto
+    public class UserDto
     {
+        public int Id { get; set; }
+
+        public string FirstName { get; set; } = string.Empty;
+
+        public string LastName { get; set; } = string.Empty;
+
+        public string Email { get; set; } = string.Empty;
+
+        public int RoleId { get; set; }
+
+        public string RoleName { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
     }
 }

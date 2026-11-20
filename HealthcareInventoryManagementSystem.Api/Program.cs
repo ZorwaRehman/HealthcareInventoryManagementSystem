@@ -4,6 +4,7 @@ using Serilog;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,9 @@ builder.Host.UseSerilog((context, services, configuration) =>
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+// Register HttpClient for external currency exchange-rate requests.
+builder.Services.AddHttpClient();
 
 // Read JWT settings from appsettings.json and User Secrets.
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -53,9 +57,31 @@ builder.Services
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 //builder.Services.AddOpenApi();
 
+
 // Register Swagger generation for Swagger UI.
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(options =>
+{
+    // Configure JWT Bearer authentication in Swagger.
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Enter your JWT token."
+    });
+
+    // Require JWT authentication in Swagger.
+    options.AddSecurityRequirement(document =>
+        new OpenApiSecurityRequirement
+        {
+            [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+        });
+});
+
 
 // Register the Infrastructure services and database context.
 builder.Services.AddInfrastructureServices(builder.Configuration);

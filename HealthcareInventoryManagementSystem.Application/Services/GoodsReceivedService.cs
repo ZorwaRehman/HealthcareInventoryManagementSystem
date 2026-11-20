@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿
+using AutoMapper;
 using FluentValidation;
 using HealthcareInventoryManagementSystem.Application.DTOs.GoodsReceived;
 using HealthcareInventoryManagementSystem.Application.DTOs.PurchaseOrders;
@@ -8,6 +9,7 @@ using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
 using HealthcareInventoryManagementSystem.Domain.Entities;
 using HealthcareInventoryManagementSystem.Domain.Enums;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace HealthcareInventoryManagementSystem.Application.Services
 {
@@ -24,10 +26,7 @@ namespace HealthcareInventoryManagementSystem.Application.Services
         ILogger<GoodsReceivedService> logger
     ) : IGoodsReceivedService
     {
-        // ---------------------------------------------------------
         // 1. GET ALL GOODS RECEIVED DOCUMENTS
-        // ---------------------------------------------------------
-
         public async Task<IEnumerable<GoodsReceivedDto>> GetAllAsync()
         {
             var receipts =
@@ -41,6 +40,7 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 .OrderByDescending(receipt => receipt.ReceivedDate)
                 .Select(receipt => mapper.Map<GoodsReceivedDto>(receipt));
         }
+
         // 2. GET GOODS RECEIVED DOCUMENT BY ID
         public async Task<GoodsReceivedDto?> GetByIdAsync(int id)
         {
@@ -67,8 +67,6 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             if (purchaseOrder == null)
                 return null;
 
-            // Goods can only be received against an ordered
-            // or partially received Purchase Order.
             if (purchaseOrder.Status != PurchaseOrderStatus.Ordered &&
                 purchaseOrder.Status != PurchaseOrderStatus.PartiallyReceived)
             {
@@ -76,7 +74,6 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                     "Goods can only be received against an Ordered or Partially Received Purchase Order.");
             }
 
-            // Reuse the existing Purchase Order response DTO.
             return mapper.Map<PurchaseOrderDto>(purchaseOrder);
         }
 
@@ -84,13 +81,13 @@ namespace HealthcareInventoryManagementSystem.Application.Services
         public async Task<GoodsReceivedDto> CreateAsync(
             CreateGoodsReceivedRequestDto request)
         {
-            // Validate the incoming request.
+            // Validate request.
             var validationResult = await validator.ValidateAsync(request);
 
             if (!validationResult.IsValid)
                 throw new ValidationException(validationResult.Errors);
 
-            // Find the Purchase Order.
+            // Find Purchase Order.
             var purchaseOrder =
                 await purchaseOrderRepository.GetByIdAsync(request.PurchaseOrderId);
 
@@ -105,7 +102,7 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                     "Goods can only be received against an Ordered or Partially Received Purchase Order.");
             }
 
-            // Load all items belonging to this Purchase Order.
+            // Load Purchase Order items.
             var purchaseOrderItems =
                 await purchaseOrderItemRepository.FindAllAsync(
                     item => item.PurchaseOrderId == request.PurchaseOrderId,
@@ -114,7 +111,7 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             var purchaseOrderItemsDictionary =
                 purchaseOrderItems.ToDictionary(item => item.PurchaseOrderItemId);
 
-            // Check that every submitted line belongs to this Purchase Order.
+            // Verify submitted items belong to the selected Purchase Order.
             foreach (var requestItem in request.Items)
             {
                 if (!purchaseOrderItemsDictionary.ContainsKey(
@@ -125,20 +122,30 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 }
             }
 
+            // Generate the daily-sequence receipt number.
+            var createdAt = DateTime.UtcNow;
+
+            var receiptNumber =
+                await GenerateReceiptNumberAsync(createdAt);
+
+            // Log the generated number for debugging.
+            logger.LogWarning(
+                "NEW RECEIPT NUMBER GENERATED: {ReceiptNumber}",
+                receiptNumber);
+
             // Create the Goods Received document.
             var receipt = new GoodsReceivedEntity
             {
-                // GUID-based number avoids relying on timestamps for uniqueness.
-                ReceiptNumber = $"GRN-{Guid.NewGuid():N}",
+                ReceiptNumber = receiptNumber,
                 PurchaseOrderId = purchaseOrder.PurchaseOrderId,
                 ReceivedDate = request.ReceivedDate,
                 DeliveryNoteNumber = request.DeliveryNoteNumber,
                 Notes = request.Notes,
                 Status = GoodsReceivedStatus.Draft,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = createdAt
             };
 
-            // Create the individual delivery lines.
+            // Create receipt items.
             foreach (var requestItem in request.Items)
             {
                 var receiptItem = new GoodsReceivedItemEntity
@@ -157,7 +164,7 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 receipt.Items.Add(receiptItem);
             }
 
-            // Save the receipt and its item lines atomically.
+            // Save receipt and receipt items in a transaction.
             await transactionManager.ExecuteInTransactionAsync(async () =>
             {
                 await goodsReceivedRepository.AddAsync(receipt);
@@ -201,15 +208,14 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             var poItemsDictionary = poItems.ToDictionary(
                 item => item.PurchaseOrderItemId);
 
-            // Calculate the accepted quantity for each Purchase Order line.
+            // Calculate accepted quantities.
             var acceptedQuantities = receipt.Items
                 .GroupBy(item => item.PurchaseOrderItemId)
                 .ToDictionary(
                     group => group.Key,
                     group => group.Sum(item => item.AcceptedQuantity));
 
-            // Verify that accepted quantities do not exceed
-            // the outstanding Purchase Order quantities.
+            // Validate accepted quantities.
             foreach (var accepted in acceptedQuantities)
             {
                 if (!poItemsDictionary.TryGetValue(
@@ -248,18 +254,17 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                         $"Goods Received {receipt.ReceiptNumber}");
                 }
 
-                // Update Purchase Order accepted quantities.
+                // Update Purchase Order received quantities.
                 foreach (var accepted in acceptedQuantities)
                 {
                     var poItem = poItemsDictionary[accepted.Key];
-
                     poItem.ReceivedQuantity += accepted.Value;
                 }
 
-                // Update the Purchase Order status.
+                // Update Purchase Order status.
                 await UpdatePurchaseOrderStatusAsync(purchaseOrder);
 
-                // Confirm the Goods Received document.
+                // Confirm receipt.
                 receipt.Status = GoodsReceivedStatus.Confirmed;
                 receipt.ConfirmedAt = DateTime.UtcNow;
             });
@@ -274,7 +279,6 @@ namespace HealthcareInventoryManagementSystem.Application.Services
         }
 
         // 6. CANCEL GOODS RECEIVED DOCUMENT
-    
         public async Task CancelAsync(int id)
         {
             var receipt = await goodsReceivedRepository.GetByIdAsync(id);
@@ -352,7 +356,7 @@ namespace HealthcareInventoryManagementSystem.Application.Services
 
             await transactionManager.ExecuteInTransactionAsync(async () =>
             {
-                // Add the released quantity to available stock.
+                // Add released quantity to available stock.
                 await AddAcceptedStockAsync(
                     receiptItem,
                     purchaseOrder,
@@ -364,10 +368,9 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 receiptItem.QuarantinedQuantity -= quantity;
                 receiptItem.AcceptedQuantity += quantity;
 
-                // Update the accepted Purchase Order quantity.
+                // Update accepted Purchase Order quantity.
                 poItem.ReceivedQuantity += quantity;
 
-                // Update Purchase Order status.
                 await UpdatePurchaseOrderStatusAsync(purchaseOrder);
             });
 
@@ -380,7 +383,49 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 ?? throw new InvalidOperationException(
                     "Goods Received document could not be retrieved after quarantine release.");
         }
-        // PRIVATE HELPER: LOAD RECEIPT WITH RELATED ENTITIES
+
+        // 8. GENERATE DAILY-SEQUENCE RECEIPT NUMBER
+        private async Task<string> GenerateReceiptNumberAsync(DateTime createdAt)
+        {
+            var dateStart = createdAt.Date;
+            var nextDate = dateStart.AddDays(1);
+
+            // Get existing receipts created on the same UTC date.
+            var existingReceipts = await goodsReceivedRepository.FindAllAsync(
+                receipt =>
+                    receipt.CreatedAt >= dateStart &&
+                    receipt.CreatedAt < nextDate);
+
+            var datePart = createdAt.ToString(
+                "yyyyMMdd",
+                CultureInfo.InvariantCulture);
+
+            var prefix = $"GRN-{datePart}-";
+
+            // Find the highest sequence already used on this date.
+            var highestSequence = existingReceipts
+                .Where(receipt =>
+                    receipt.ReceiptNumber.StartsWith(prefix))
+                .Select(receipt =>
+                {
+                    var sequencePart =
+                        receipt.ReceiptNumber.Substring(prefix.Length);
+
+                    return int.TryParse(
+                        sequencePart,
+                        out var sequence)
+                        ? sequence
+                        : 0;
+                })
+                .DefaultIfEmpty(0)
+                .Max();
+
+            var nextSequence = highestSequence + 1;
+
+            return $"{prefix}{nextSequence:D3}";
+        }
+
+        // 9. LOAD RECEIPT WITH RELATED ENTITIES
         private async Task<GoodsReceivedEntity?> GetReceiptEntityAsync(int id)
         {
             var receipts =
@@ -393,7 +438,8 @@ namespace HealthcareInventoryManagementSystem.Application.Services
 
             return receipts.FirstOrDefault();
         }
-        // PRIVATE HELPER: ADD ACCEPTED QUANTITY TO STOCK
+
+        // 10. ADD ACCEPTED QUANTITY TO STOCK
         private async Task AddAcceptedStockAsync(
             GoodsReceivedItemEntity receiptItem,
             PurchaseOrderEntity purchaseOrder,
@@ -404,8 +450,7 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             if (quantity <= 0)
                 return;
 
-            // Find an existing batch using the existing unique
-            // ItemId + BatchNumber combination.
+            // Find an existing stock batch.
             var stockBatch = await stockBatchRepository.FindAsync(
                 batch =>
                     batch.ItemId == poItem.ItemId &&
@@ -413,7 +458,6 @@ namespace HealthcareInventoryManagementSystem.Application.Services
 
             if (stockBatch == null)
             {
-                // Create a new stock batch if one does not exist.
                 stockBatch = new StockBatchEntity
                 {
                     ItemId = poItem.ItemId,
@@ -428,8 +472,6 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             }
             else
             {
-                // Do not combine batches with conflicting supplier
-                // or unit-price information.
                 if (stockBatch.SupplierId.HasValue &&
                     stockBatch.SupplierId.Value != purchaseOrder.SupplierId)
                 {
@@ -452,15 +494,13 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                     stockBatch.ExpiryDate = receiptItem.ExpiryDate;
             }
 
-            // Link the receipt line to its stock batch.
-            // Assigning the navigation property also works
-            // when the stock batch is newly created.
+            // Link receipt item to stock batch.
             receiptItem.StockBatch = stockBatch;
 
-            // Record the stock-in transaction.
             var previousQuantity =
                 stockBatch.QuantityInStock - quantity;
 
+            // Record stock-in transaction.
             var stockTransaction = new StockTransactionEntity
             {
                 StockBatch = stockBatch,
@@ -475,7 +515,8 @@ namespace HealthcareInventoryManagementSystem.Application.Services
 
             await stockTransactionRepository.AddAsync(stockTransaction);
         }
-        // PRIVATE HELPER: UPDATE PURCHASE ORDER STATUS
+
+        // 11. UPDATE PURCHASE ORDER STATUS
         private async Task UpdatePurchaseOrderStatusAsync(
             PurchaseOrderEntity purchaseOrder)
         {
@@ -485,13 +526,11 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             if (!items.Any())
                 return;
 
-            // All ordered quantities have been accepted.
             if (items.All(item =>
                     item.ReceivedQuantity >= item.OrderedQuantity))
             {
                 purchaseOrder.Status = PurchaseOrderStatus.Received;
             }
-            // At least one quantity has been accepted.
             else if (items.Any(item => item.ReceivedQuantity > 0))
             {
                 purchaseOrder.Status = PurchaseOrderStatus.PartiallyReceived;

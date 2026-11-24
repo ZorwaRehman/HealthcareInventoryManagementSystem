@@ -56,6 +56,15 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.DependencyInjection
             // Register the stock management service.
             services.AddScoped<IStockService, StockService>();
 
+            // Register the report service.
+            services.AddScoped<IReportService, ReportService>();
+
+            // Register the Excel report export service.
+            services.AddScoped<IExcelReportService, ExcelReportService>();
+
+            // Register the PDF report export service.
+            services.AddScoped<IPdfReportService, PdfReportService>();
+
             // Register the alert service.
             services.AddScoped<IAlertService, AlertService>();
 

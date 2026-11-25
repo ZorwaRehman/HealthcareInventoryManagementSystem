@@ -4,6 +4,8 @@ using HealthcareInventoryManagementSystem.Application.Interfaces.Repositories;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
 using HealthcareInventoryManagementSystem.Domain.Entities;
 using Microsoft.Extensions.Logging;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
+using System.Reflection;
 
 namespace HealthcareInventoryManagementSystem.Application.Services
 {
@@ -485,6 +487,178 @@ namespace HealthcareInventoryManagementSystem.Application.Services
 
                 throw;
             }
+        }
+
+        // ==========================================
+        // PAGINATED REPORT METHODS
+        // ==========================================
+
+        public async Task<PaginationResponseDto<StockReportDto>>
+            GetPagedStockSummaryAsync(
+                int pageNumber, int pageSize, string? search, string? status)
+        {
+            var report = await GetStockSummaryAsync();
+
+            return CreatePagedResponse(report, pageNumber, pageSize, search, status);
+        }
+
+        public async Task<PaginationResponseDto<LowStockReportDto>>
+            GetPagedLowStockReportAsync(
+                int pageNumber, int pageSize, string? search, string? status)
+        {
+            var report = await GetLowStockReportAsync();
+
+            return CreatePagedResponse(report, pageNumber, pageSize, search, status);
+        }
+
+        public async Task<PaginationResponseDto<ExpiryReportDto>>
+            GetPagedExpiryReportAsync(
+                int pageNumber, int pageSize, string? search, string? status)
+        {
+            var report = await GetExpiryReportAsync();
+
+            return CreatePagedResponse(report, pageNumber, pageSize, search, status);
+        }
+
+        public async Task<PaginationResponseDto<StockTransactionReportDto>>
+            GetPagedStockTransactionsReportAsync(
+                int pageNumber, int pageSize, string? search, string? status)
+        {
+            var report = await GetStockTransactionsReportAsync();
+
+            return CreatePagedResponse(report, pageNumber, pageSize, search, status);
+        }
+
+        public async Task<PaginationResponseDto<PurchaseReportDto>>
+            GetPagedPurchaseOrdersReportAsync(
+                int pageNumber, int pageSize, string? search, string? status)
+        {
+            var report = await GetPurchaseOrdersReportAsync();
+
+            return CreatePagedResponse(report, pageNumber, pageSize, search, status);
+        }
+
+        public async Task<PaginationResponseDto<GoodsReceivedReportDto>>
+            GetPagedGoodsReceivedReportAsync(
+                int pageNumber, int pageSize, string? search, string? status)
+        {
+            var report = await GetGoodsReceivedReportAsync();
+
+            return CreatePagedResponse(report, pageNumber, pageSize, search, status);
+        }
+
+        public async Task<PaginationResponseDto<SupplierReportDto>>
+            GetPagedSupplierReportAsync(
+                int pageNumber, int pageSize, string? search, string? status)
+        {
+            var report = await GetSupplierReportAsync();
+
+            return CreatePagedResponse(report, pageNumber, pageSize, search, status);
+        }
+
+        public async Task<PaginationResponseDto<InventoryValuationReportDto>>
+            GetPagedInventoryValuationReportAsync(
+                int pageNumber, int pageSize, string? search, string? status)
+        {
+            var report = await GetInventoryValuationReportAsync();
+
+            return CreatePagedResponse(report, pageNumber, pageSize, search, status);
+        }
+
+        // ==========================================
+        // PAGINATION HELPER
+        // ==========================================
+
+        private static PaginationResponseDto<T> CreatePagedResponse<T>(
+            IEnumerable<T> source,
+            int pageNumber,
+            int pageSize,
+            string? search,
+            string? status)
+        {
+            pageNumber = Math.Max(1, pageNumber);
+            pageSize = Math.Clamp(pageSize, 1, 100);
+
+            IEnumerable<T> result = source;
+
+            // Apply search across the report DTO properties.
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchTerm = search.Trim();
+
+                result = result.Where(item =>
+                    item != null &&
+                    typeof(T).GetProperties()
+                        .Any(property =>
+                        {
+                            var value = property.GetValue(item);
+
+                            return value != null &&
+                                   value.ToString()!
+                                       .Contains(
+                                           searchTerm,
+                                           StringComparison.OrdinalIgnoreCase);
+                        }));
+            }
+
+            // Apply status filtering when a report has a status field.
+            if (!string.IsNullOrWhiteSpace(status) &&
+                !status.Equals("All", StringComparison.OrdinalIgnoreCase))
+            {
+                var properties = typeof(T).GetProperties();
+
+                var statusProperty = properties.FirstOrDefault(
+                    property => property.Name == "Status");
+
+                var activeProperty = properties.FirstOrDefault(
+                    property => property.Name == "IsActive");
+
+                if (statusProperty != null)
+                {
+                    result = result.Where(item =>
+                        string.Equals(
+                            statusProperty.GetValue(item)?.ToString(),
+                            status,
+                            StringComparison.OrdinalIgnoreCase));
+                }
+                else if (activeProperty != null &&
+                         activeProperty.PropertyType == typeof(bool))
+                {
+                    bool isActive = status.Equals(
+                        "Active",
+                        StringComparison.OrdinalIgnoreCase);
+
+                    bool isInactive = status.Equals(
+                        "Inactive",
+                        StringComparison.OrdinalIgnoreCase);
+
+                    result = isActive || isInactive
+                        ? result.Where(item =>
+                            (bool)activeProperty.GetValue(item)! == isActive)
+                        : Enumerable.Empty<T>();
+                }
+                else
+                {
+                    result = Enumerable.Empty<T>();
+                }
+            }
+
+            var filteredItems = result.ToList();
+
+            var totalCount = filteredItems.Count;
+
+            var pagedItems = filteredItems
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return new PaginationResponseDto<T>
+            {
+                Items = pagedItems,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
     }
 }

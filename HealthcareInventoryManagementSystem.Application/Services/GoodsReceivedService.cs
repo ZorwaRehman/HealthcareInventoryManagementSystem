@@ -10,6 +10,8 @@ using HealthcareInventoryManagementSystem.Domain.Entities;
 using HealthcareInventoryManagementSystem.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using System.Globalization;
+using System.Linq.Expressions;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
 
 namespace HealthcareInventoryManagementSystem.Application.Services
 {
@@ -39,6 +41,75 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             return receipts
                 .OrderByDescending(receipt => receipt.ReceivedDate)
                 .Select(receipt => mapper.Map<GoodsReceivedDto>(receipt));
+        }
+
+        // Retrieves paginated Goods Received documents with optional search and status filters.
+        public async Task<PaginationResponseDto<GoodsReceivedDto>> GetPagedAsync(
+            PaginationRequestDto request,
+            string? search = null,
+            GoodsReceivedStatus? status = null)
+        {
+            var pageNumber = Math.Max(1, request.PageNumber);
+            var pageSize = Math.Clamp(request.PageSize, 1, 100);
+
+            var searchTerm = string.IsNullOrWhiteSpace(search)
+                ? null
+                : search.Trim();
+
+            // Apply search and status filters at database level.
+            Expression<Func<GoodsReceivedEntity, bool>> predicate = receipt =>
+                (!status.HasValue || receipt.Status == status.Value)
+                &&
+                (
+                    searchTerm == null
+                    || receipt.ReceiptNumber.Contains(searchTerm)
+                    || (receipt.DeliveryNoteNumber != null
+                        && receipt.DeliveryNoteNumber.Contains(searchTerm))
+                    || (receipt.PurchaseOrder != null
+                        && receipt.PurchaseOrder.OrderNumber.Contains(searchTerm))
+                    || (receipt.PurchaseOrder != null
+                        && receipt.PurchaseOrder.Supplier != null
+                        && receipt.PurchaseOrder.Supplier.Name.Contains(searchTerm))
+                );
+
+            // Retrieve only the requested page.
+            var pagedResult = await goodsReceivedRepository.GetPagedAsync(
+                predicate,
+                receipt => receipt.ReceivedDate,
+                pageNumber,
+                pageSize,
+                descending: true);
+
+            // Get IDs of the receipts on this page.
+            var receiptIds = pagedResult.Items
+                .Select(receipt => receipt.GoodsReceivedId)
+                .ToList();
+
+            // Load related details only for the current page.
+            var detailedReceipts = receiptIds.Count == 0
+                ? new List<GoodsReceivedEntity>()
+                : (await goodsReceivedRepository.FindAllWithNestedIncludesAsync(
+                    receipt => receiptIds.Contains(receipt.GoodsReceivedId),
+                    "PurchaseOrder.Supplier",
+                    "Items.PurchaseOrderItem.Item",
+                    "Items.StockBatch")).ToList();
+
+            // Restore the original pagination order.
+            var receiptsById = detailedReceipts.ToDictionary(
+                receipt => receipt.GoodsReceivedId);
+
+            var receiptDtos = receiptIds
+                .Where(id => receiptsById.ContainsKey(id))
+                .Select(id => mapper.Map<GoodsReceivedDto>(receiptsById[id]))
+                .ToList();
+
+            return new PaginationResponseDto<GoodsReceivedDto>
+            {
+                Items = receiptDtos,
+                TotalCount = pagedResult.TotalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
         // 2. GET GOODS RECEIVED DOCUMENT BY ID

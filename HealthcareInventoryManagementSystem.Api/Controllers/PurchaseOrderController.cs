@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using HealthcareInventoryManagementSystem.Application.DTOs.PurchaseOrders;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
+using HealthcareInventoryManagementSystem.Domain.Enums;
 
 namespace HealthcareInventoryManagementSystem.Api.Controllers
 {
@@ -20,6 +22,54 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
                 await purchaseOrderService.GetAllPurchaseOrdersAsync();
 
             return Ok(purchaseOrders);
+        }
+
+        // GET: api/PurchaseOrder/paged
+        // Returns paginated purchase orders with optional search and status filtering.
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPagedPurchaseOrders(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(new
+                {
+                    message = "Page number and page size must be greater than zero."
+                });
+            }
+
+            PurchaseOrderStatus? parsedStatus = null;
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (!Enum.TryParse<PurchaseOrderStatus>(
+                        status, true, out var statusValue)
+                    || !Enum.IsDefined(statusValue))
+                {
+                    return BadRequest(new
+                    {
+                        message = "The selected Purchase Order status is invalid."
+                    });
+                }
+
+                parsedStatus = statusValue;
+            }
+
+            var request = new PaginationRequestDto
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            var result = await purchaseOrderService.GetPagedPurchaseOrdersAsync(
+                request,
+                search,
+                parsedStatus);
+
+            return Ok(result);
         }
 
         // GET: api/PurchaseOrder/1

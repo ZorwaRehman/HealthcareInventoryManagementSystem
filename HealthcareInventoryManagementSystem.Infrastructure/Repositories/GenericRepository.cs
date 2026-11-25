@@ -84,6 +84,47 @@ namespace HealthcareInventoryManagementSystem.Infrastructure.Repositories
         }
 
 
+        // Retrieve a page of records directly from the database.
+        public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+            Expression<Func<T, bool>>? predicate,
+            Expression<Func<T, object>> orderBy,
+            int pageNumber,
+            int pageSize,
+            bool descending = false,
+            params Expression<Func<T, object>>[] includes)
+        {
+            // Start with a read-only database query.
+            IQueryable<T> query = _dbSet.AsNoTracking();
+
+            // Apply filtering before counting and pagination.
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+
+            // Count all matching records before pagination.
+            int totalCount = await query.CountAsync();
+
+            // Include related entities when requested.
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            // Apply sorting.
+            query = descending
+                ? query.OrderByDescending(orderBy)
+                : query.OrderBy(orderBy);
+
+            // Retrieve only the requested page.
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
         // CHECK: Check whether a matching record exists.
         public async Task<bool> ExistsAsync(
             Expression<Func<T, bool>> predicate)

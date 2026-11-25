@@ -1,5 +1,7 @@
-﻿using AutoMapper;
+﻿
+using AutoMapper;
 using HealthcareInventoryManagementSystem.Application.DTOs.Stocks;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
 using HealthcareInventoryManagementSystem.Application.Interfaces;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Repositories;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
@@ -50,6 +52,85 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to retrieve stock summaries.");
+                throw;
+            }
+        }
+
+        // Returns paginated stock summaries with server-side search.
+        public async Task<PaginationResponseDto<StockDto>> GetPagedStockAsync(
+            PaginationRequestDto request,
+            string? search = null)
+        {
+            try
+            {
+                int pageNumber = request.PageNumber < 1
+                    ? 1
+                    : request.PageNumber;
+
+                int pageSize = request.PageSize < 1
+                    ? 10
+                    : Math.Min(request.PageSize, 100);
+
+                string? searchTerm = string.IsNullOrWhiteSpace(search)
+                    ? null
+                    : search.Trim();
+
+                System.Linq.Expressions.Expression<Func<ItemEntity, bool>>? predicate =
+                    null;
+
+                if (searchTerm != null)
+                {
+                    predicate = item =>
+                        item.Name.Contains(searchTerm) ||
+                        item.SKU.Contains(searchTerm);
+                }
+
+                // Retrieve only the requested page of inventory items.
+                var result = await itemRepository.GetPagedAsync(
+                    predicate,
+                    item => item.Id,
+                    pageNumber,
+                    pageSize);
+
+                // Retrieve batches only for items on the current page.
+                var itemIds = result.Items
+                    .Select(item => item.Id)
+                    .ToList();
+
+                var batches = await stockBatchRepository.FindAllAsync(
+                    batch => itemIds.Contains(batch.ItemId));
+
+                var stockSummary = result.Items.Select(item =>
+                {
+                    var totalQuantity = batches
+                        .Where(batch => batch.ItemId == item.Id)
+                        .Sum(batch => batch.QuantityInStock);
+
+                    return new StockDto
+                    {
+                        ItemId = item.Id,
+                        ItemName = item.Name,
+                        TotalQuantity = totalQuantity,
+                        ReorderLevel = item.ReorderLevel
+                    };
+                }).ToList();
+
+                logger.LogInformation(
+                    "Retrieved stock page {PageNumber} with {ItemCount} items.",
+                    pageNumber,
+                    stockSummary.Count);
+
+                return new PaginationResponseDto<StockDto>
+                {
+                    Items = stockSummary,
+                    TotalCount = result.TotalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to retrieve paginated stock summaries.");
                 throw;
             }
         }
@@ -147,7 +228,6 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             // Find the supplier selected for this stock batch.
             var supplier = await supplierRepository.GetByIdAsync(dto.SupplierId);
 
-            // Make sure the supplier exists.
             if (supplier is null)
                 throw new KeyNotFoundException(
                     $"Supplier with ID {dto.SupplierId} was not found.");
@@ -169,7 +249,7 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             {
                 ItemId = dto.ItemId,
                 SupplierId = dto.SupplierId,
-                Supplier = supplier, // Keep the already-loaded supplier available for mapping.
+                Supplier = supplier,
                 BatchNumber = batchNumber,
                 ExpiryDate = dto.ExpiryDate,
                 QuantityInStock = dto.QuantityInStock,
@@ -178,15 +258,12 @@ namespace HealthcareInventoryManagementSystem.Application.Services
 
             await transactionManager.ExecuteInTransactionAsync(async () =>
             {
-                // Add the batch to EF Core's change tracker.
                 await stockBatchRepository.AddAsync(batch);
 
-                // Save inside the transaction to obtain the generated batch ID.
-                // The transaction manager will commit only after the operation
-                // completes successfully.
+                // Save to obtain the generated batch ID.
                 await stockBatchRepository.SaveChangesAsync();
 
-                // Record the initial stock only when the batch has a quantity.
+                // Record initial stock only when quantity is greater than zero.
                 if (batch.QuantityInStock > 0)
                 {
                     var stockTransaction = new StockTransactionEntity
@@ -233,7 +310,6 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                         "TransactionType must be StockIn, StockOut, or Adjustment.");
                 }
 
-                // Validate the quantity based on the transaction type.
                 if (transactionType == "Adjustment")
                 {
                     if (!dto.PhysicalQuantity.HasValue)
@@ -295,11 +371,9 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                             break;
 
                         case "Adjustment":
-                            // Calculate the difference using the actual physical count.
                             transactionQuantity =
                                 dto.PhysicalQuantity!.Value - previousQuantity;
 
-                            // Do not create a transaction if the quantity is unchanged.
                             if (transactionQuantity == 0)
                                 return;
 
@@ -327,8 +401,6 @@ namespace HealthcareInventoryManagementSystem.Application.Services
 
                     await stockTransactionRepository.AddAsync(
                         stockTransaction);
-
-                    // The transaction manager saves and commits both changes.
                 });
 
                 logger.LogInformation(
@@ -446,7 +518,7 @@ namespace HealthcareInventoryManagementSystem.Application.Services
 
                 var batches = await stockBatchRepository.FindAllAsync(
                     batch => batch.ItemId == itemId,
-                    batch => batch.Supplier!); // Load supplier details with each batch.
+                    batch => batch.Supplier!);
 
                 var result = mapper.Map<List<StockBatchDto>>(batches);
 
@@ -480,12 +552,10 @@ namespace HealthcareInventoryManagementSystem.Application.Services
         {
             try
             {
-                // Retrieve all batches and their associated suppliers.
                 var batches = await stockBatchRepository.FindAllAsync(
                     batch => true,
                     batch => batch.Supplier!);
 
-                // Convert batch entities into DTOs.
                 var result = mapper.Map<List<StockBatchDto>>(batches);
 
                 logger.LogInformation(
@@ -500,6 +570,93 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 throw;
             }
         }
+
+
+        // Returns paginated stock batches with server-side search and item filtering.
+        public async Task<PaginationResponseDto<StockBatchDto>> GetPagedBatchesAsync(
+            PaginationRequestDto request,
+            string? search = null,
+            int? itemId = null)
+        {
+            try
+            {
+                int pageNumber = request.PageNumber < 1
+                    ? 1
+                    : request.PageNumber;
+
+                int pageSize = request.PageSize < 1
+                    ? 10
+                    : Math.Min(request.PageSize, 100);
+
+                string? searchTerm = string.IsNullOrWhiteSpace(search)
+                    ? null
+                    : search.Trim();
+
+                System.Linq.Expressions.Expression<Func<StockBatchEntity, bool>>? predicate =
+                    null;
+
+                // Apply both item filtering and search when both are provided.
+                if (itemId.HasValue && searchTerm != null)
+                {
+                    predicate = batch =>
+                        batch.ItemId == itemId.Value &&
+                        (
+                            batch.BatchNumber.Contains(searchTerm) ||
+                            batch.Item.Name.Contains(searchTerm) ||
+                            batch.Item.SKU.Contains(searchTerm) ||
+                            (batch.Supplier != null &&
+                             batch.Supplier.Name.Contains(searchTerm))
+                        );
+                }
+                // Apply only the selected inventory item filter.
+                else if (itemId.HasValue)
+                {
+                    predicate = batch => batch.ItemId == itemId.Value;
+                }
+                // Apply only search when no item is selected.
+                else if (searchTerm != null)
+                {
+                    predicate = batch =>
+                        batch.BatchNumber.Contains(searchTerm) ||
+                        batch.Item.Name.Contains(searchTerm) ||
+                        batch.Item.SKU.Contains(searchTerm) ||
+                        (batch.Supplier != null &&
+                         batch.Supplier.Name.Contains(searchTerm));
+                }
+
+                // Retrieve only the requested batch page and its related data.
+                var result = await stockBatchRepository.GetPagedAsync(
+                    predicate,
+                    batch => batch.StockBatchId,
+                    pageNumber,
+                    pageSize,
+                    false,
+                    batch => batch.Item,
+                    batch => batch.Supplier!);
+
+                var batchDtos = mapper.Map<List<StockBatchDto>>(
+                    result.Items);
+
+                logger.LogInformation(
+                    "Retrieved stock batch page {PageNumber} with {BatchCount} batches.",
+                    pageNumber,
+                    batchDtos.Count);
+
+                return new PaginationResponseDto<StockBatchDto>
+                {
+                    Items = batchDtos,
+                    TotalCount = result.TotalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to retrieve paginated stock batches.");
+                throw;
+            }
+        }
+
 
         // Updates the batch number of an existing stock batch.
         public async Task UpdateStockBatchNumberAsync(
@@ -522,15 +679,12 @@ namespace HealthcareInventoryManagementSystem.Application.Services
 
             await transactionManager.ExecuteInTransactionAsync(async () =>
             {
-                // Find the existing batch.
                 var batch = await stockBatchRepository.GetByIdAsync(stockBatchId);
 
                 if (batch is null)
                     throw new KeyNotFoundException(
                         $"Stock batch {stockBatchId} was not found.");
 
-                // Check whether another batch for the same item
-                // already uses the requested batch number.
                 var duplicate = await stockBatchRepository.ExistsAsync(
                     existing =>
                         existing.ItemId == batch.ItemId &&
@@ -541,7 +695,6 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                     throw new ArgumentException(
                         "This batch number already exists for the selected item.");
 
-                // Change only the batch number.
                 batch.BatchNumber = batchNumber;
 
                 stockBatchRepository.Update(batch);

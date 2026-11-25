@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using HealthcareInventoryManagementSystem.Application.DTOs.Stocks;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
 
 namespace HealthcareInventoryManagementSystem.Application.Interfaces.Services
 {
@@ -32,5 +33,16 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces.Services
 
         // Updates the batch number of an existing stock batch.
         Task UpdateStockBatchNumberAsync(int stockBatchId, string batchNumber);
+
+        // Gets stock summaries using server-side pagination and search.
+        Task<PaginationResponseDto<StockDto>> GetPagedStockAsync(
+            PaginationRequestDto request,
+            string? search = null);
+
+        // Gets stock batches using server-side pagination and search.
+        Task<PaginationResponseDto<StockBatchDto>> GetPagedBatchesAsync(
+            PaginationRequestDto request,
+            string? search = null,
+            int? itemId = null);
     }
 }

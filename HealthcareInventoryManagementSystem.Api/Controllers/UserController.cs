@@ -29,6 +29,24 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
             return Ok(users);
         }
 
+        // GET: api/Users/paged
+        // Retrieve users with server-side pagination, search, and role filtering.
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPagedUsers(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? role = null)
+        {
+            var users = await _userService.GetPagedUsersAsync(
+                pageNumber,
+                pageSize,
+                search,
+                role);
+
+            return Ok(users);
+        }
+
         // GET: api/Users/roles
         // Retrieve all available roles.
         [HttpGet("roles")]

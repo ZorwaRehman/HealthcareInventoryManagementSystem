@@ -1,10 +1,13 @@
-﻿using AutoMapper;
+﻿
+using AutoMapper;
 using FluentValidation;
 using HealthcareInventoryManagementSystem.Application.DTOs.Suppliers;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Repositories;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
 using HealthcareInventoryManagementSystem.Domain.Entities;
 using Microsoft.Extensions.Logging;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
+using System.Linq.Expressions;
 
 namespace HealthcareInventoryManagementSystem.Application.Services
 {
@@ -33,6 +36,71 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             var suppliers = await _supplierRepository.GetAllAsync();
 
             return _mapper.Map<IEnumerable<SupplierDto>>(suppliers);
+        }
+
+        // Get suppliers using server-side pagination, search, and status filtering.
+        public async Task<PaginationResponseDto<SupplierDto>> GetPagedSuppliersAsync(
+            PaginationRequestDto request,
+            string? search = null,
+            bool? isActive = null)
+        {
+            try
+            {
+                int pageNumber = request.PageNumber < 1
+                    ? 1
+                    : request.PageNumber;
+
+                int pageSize = request.PageSize < 1
+                    ? 10
+                    : Math.Min(request.PageSize, 100);
+
+                string? searchTerm = string.IsNullOrWhiteSpace(search)
+                    ? null
+                    : search.Trim();
+
+                Expression<Func<Supplier, bool>> predicate = supplier =>
+                    (!isActive.HasValue || supplier.IsActive == isActive.Value) &&
+                    (
+                        searchTerm == null ||
+                        supplier.Name.Contains(searchTerm) ||
+                        (supplier.ContactPerson != null &&
+                         supplier.ContactPerson.Contains(searchTerm)) ||
+                        (supplier.Email != null &&
+                         supplier.Email.Contains(searchTerm)) ||
+                        (supplier.Phone != null &&
+                         supplier.Phone.Contains(searchTerm)) ||
+                        (supplier.City != null &&
+                         supplier.City.Contains(searchTerm)) ||
+                        (supplier.Country != null &&
+                         supplier.Country.Contains(searchTerm))
+                    );
+
+                var result = await _supplierRepository.GetPagedAsync(
+                    predicate,
+                    supplier => supplier.SupplierId,
+                    pageNumber,
+                    pageSize);
+
+                var supplierDtos = _mapper.Map<List<SupplierDto>>(result.Items);
+
+                _logger.LogInformation(
+                    "Retrieved supplier page {PageNumber} with {SupplierCount} suppliers.",
+                    pageNumber,
+                    supplierDtos.Count);
+
+                return new PaginationResponseDto<SupplierDto>
+                {
+                    Items = supplierDtos,
+                    TotalCount = result.TotalCount,
+                    PageNumber = pageNumber,
+                    PageSize = pageSize
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to retrieve paginated suppliers.");
+                throw;
+            }
         }
 
         // Get a supplier by its ID.

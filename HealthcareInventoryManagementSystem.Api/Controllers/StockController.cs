@@ -1,6 +1,8 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using HealthcareInventoryManagementSystem.Application.DTOs.Stocks;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,6 +21,35 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
             return Ok(stock);
         }
 
+        // GET: api/Stock/paged?pageNumber=1&pageSize=10&search=gloves
+        // Returns paginated stock summaries with optional search.
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPagedStock(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(new
+                {
+                    message = "Page number and page size must be greater than zero."
+                });
+            }
+
+            var request = new PaginationRequestDto
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            var result = await stockService.GetPagedStockAsync(
+                request,
+                search);
+
+            return Ok(result);
+        }
+
         // GET: api/Stock/batches
         // Returns all stock batches across every inventory item.
         [HttpGet("batches")]
@@ -27,6 +58,47 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
             var batches = await stockService.GetAllBatchesAsync();
             return Ok(batches);
         }
+
+
+        // GET: api/Stock/batches/paged?pageNumber=1&pageSize=10&search=gloves&itemId=1
+        // Returns paginated stock batches with optional search and item filtering.
+        [HttpGet("batches/paged")]
+        public async Task<IActionResult> GetPagedBatches(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] int? itemId = null)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(new
+                {
+                    message = "Page number and page size must be greater than zero."
+                });
+            }
+
+            if (itemId.HasValue && itemId.Value <= 0)
+            {
+                return BadRequest(new
+                {
+                    message = "Item ID must be greater than zero."
+                });
+            }
+
+            var request = new PaginationRequestDto
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            var result = await stockService.GetPagedBatchesAsync(
+                request,
+                search,
+                itemId);
+
+            return Ok(result);
+        }
+
 
         // GET: api/Stock/item/1
         // Returns the stock summary for a specific item.
@@ -71,7 +143,6 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
 
         // POST: api/Stock/adjust
         // Adds, removes, or adjusts stock.
-
         [HttpPost("adjust")]
         public async Task<IActionResult> AdjustStock(
             [FromBody] StockAdjustmentDto dto)

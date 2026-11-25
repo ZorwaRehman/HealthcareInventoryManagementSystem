@@ -1,4 +1,6 @@
-﻿using HealthcareInventoryManagementSystem.Application.DTOs.Users;
+﻿
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
+using HealthcareInventoryManagementSystem.Application.DTOs.Users;
 using HealthcareInventoryManagementSystem.Domain.Entities;
 
 namespace HealthcareInventoryManagementSystem.Application.Interfaces.Services
@@ -6,6 +8,12 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces.Services
     public interface IUserService
     {
         Task<IEnumerable<UserDto>> GetAllUsersAsync();
+
+        Task<PaginationResponseDto<UserDto>> GetPagedUsersAsync(
+            int pageNumber,
+            int pageSize,
+            string? search,
+            string? role);
 
         Task<IEnumerable<RoleEntity>> GetAllRolesAsync();
 

@@ -1,6 +1,7 @@
 ﻿
 using HealthcareInventoryManagementSystem.Application.DTOs.Suppliers;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HealthcareInventoryManagementSystem.Api.Controllers
@@ -21,6 +22,36 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
         public async Task<IActionResult> GetAllSuppliers()
         {
             var suppliers = await _supplierService.GetAllSuppliersAsync();
+
+            return Ok(suppliers);
+        }
+
+        // GET: api/Suppliers/paged
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPagedSuppliers(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] bool? isActive = null)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(new
+                {
+                    message = "Page number and page size must be greater than zero."
+                });
+            }
+
+            var request = new PaginationRequestDto
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            var suppliers = await _supplierService.GetPagedSuppliersAsync(
+                request,
+                search,
+                isActive);
 
             return Ok(suppliers);
         }

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 
 using HealthcareInventoryManagementSystem.Application.Dtos;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
 using HealthcareInventoryManagementSystem.Application.Interfaces;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Repositories;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
@@ -31,6 +32,74 @@ namespace HealthcareInventoryManagementSystem.Application.Services
             var items = await _itemRepository.GetAllAsync();
 
             return items.Select(MapToDto).ToList();
+        }
+
+        // Retrieve items with pagination, search, and category filtering.
+        public async Task<PaginationResponseDto<ItemDto>> GetPagedItemsAsync(
+            PaginationRequestDto request,
+            string? search = null,
+            string? category = null)
+        {
+            // Ensure valid pagination values.
+            int pageNumber = request.PageNumber < 1 ? 1 : request.PageNumber;
+            int pageSize = request.PageSize < 1
+                ? 10
+                : Math.Min(request.PageSize, 100);
+
+            // Prepare search and category filter values.
+            string? searchTerm = string.IsNullOrWhiteSpace(search)
+                ? null
+                : search.Trim();
+
+            string? categoryFilter =
+                string.IsNullOrWhiteSpace(category) ||
+                category.Trim().Equals("All", StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : category.Trim();
+
+            // Build the database filter.
+            System.Linq.Expressions.Expression<Func<ItemEntity, bool>>? predicate = null;
+
+            if (searchTerm != null && categoryFilter != null)
+            {
+                predicate = item =>
+                    (
+                        item.Name.Contains(searchTerm) ||
+                        item.Category.Contains(searchTerm) ||
+                        item.SKU.Contains(searchTerm)
+                    ) &&
+                    item.Category == categoryFilter;
+            }
+            else if (searchTerm != null)
+            {
+                predicate = item =>
+                    item.Name.Contains(searchTerm) ||
+                    item.Category.Contains(searchTerm) ||
+                    item.SKU.Contains(searchTerm);
+            }
+            else if (categoryFilter != null)
+            {
+                predicate = item => item.Category == categoryFilter;
+            }
+
+            // Retrieve only the requested page from the database.
+            var result = await _itemRepository.GetPagedAsync(
+                predicate,
+                item => item.Id,
+                pageNumber,
+                pageSize);
+
+            // Convert database entities into DTOs.
+            var itemDtos = result.Items.Select(MapToDto).ToList();
+
+            // Return paginated results and pagination information.
+            return new PaginationResponseDto<ItemDto>
+            {
+                Items = itemDtos,
+                TotalCount = result.TotalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
         // Retrieve one item by ID.

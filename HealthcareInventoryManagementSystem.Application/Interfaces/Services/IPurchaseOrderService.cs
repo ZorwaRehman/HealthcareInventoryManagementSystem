@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using HealthcareInventoryManagementSystem.Application.DTOs.PurchaseOrders;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
+using HealthcareInventoryManagementSystem.Domain.Enums;
 
 namespace HealthcareInventoryManagementSystem.Application.Interfaces.Services
 {
@@ -10,6 +12,12 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces.Services
     {
         // Get all purchase orders.
         Task<IEnumerable<PurchaseOrderDto>> GetAllPurchaseOrdersAsync();
+
+        // Get purchase orders using server-side pagination, search and status filtering.
+        Task<PaginationResponseDto<PurchaseOrderDto>> GetPagedPurchaseOrdersAsync(
+            PaginationRequestDto request,
+            string? search = null,
+            PurchaseOrderStatus? status = null);
 
         // Get a purchase order by its ID.
         Task<PurchaseOrderDto?> GetPurchaseOrderByIdAsync(int purchaseOrderId);

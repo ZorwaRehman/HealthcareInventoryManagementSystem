@@ -37,6 +37,41 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
             return Ok(items);
         }
 
+
+        // GET: api/Items/paged?pageNumber=1&pageSize=10&search=gloves&category=Medical%20Supplies
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPagedItems(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? category = null)
+        {
+            // Validate pagination values.
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(new
+                {
+                    message = "Page number and page size must be greater than zero."
+                });
+            }
+
+            // Create the pagination request.
+            var request = new HealthcareInventoryManagementSystem.Application.Dtos.Pagination.PaginationRequestDto
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            // Retrieve the requested page with search and category filters.
+            var result = await _itemService.GetPagedItemsAsync(
+                request,
+                search,
+                category);
+
+            return Ok(result);
+        }
+
+
         // GET: api/Items/5
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetItemById(int id)

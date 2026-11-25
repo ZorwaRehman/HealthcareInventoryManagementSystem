@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using HealthcareInventoryManagementSystem.Application.Dtos;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
 
 namespace HealthcareInventoryManagementSystem.Application.Interfaces
 {
@@ -8,6 +9,12 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces
     {
         // Retrieve all items.
         Task<IEnumerable<ItemDto>> GetAllItemsAsync();
+
+        // Retrieve items with pagination and optional search.
+        Task<PaginationResponseDto<ItemDto>> GetPagedItemsAsync(
+            PaginationRequestDto request,
+            string? search = null,
+            string? category = null);
 
         // Retrieve one item by ID.
         Task<ItemDto?> GetItemByIdAsync(int id);

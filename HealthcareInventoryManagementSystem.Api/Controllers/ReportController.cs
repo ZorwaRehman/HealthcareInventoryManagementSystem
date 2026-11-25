@@ -1,6 +1,7 @@
 ﻿
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
 
 namespace HealthcareInventoryManagementSystem.Api.Controllers
 {
@@ -508,6 +509,122 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
                 file,
                 "application/pdf",
                 fileName);
+        }
+
+        // ==========================================
+        // PAGINATED REPORT ENDPOINTS
+        // ==========================================
+
+        // GET: api/Report/stock-summary/paged
+        [HttpGet("stock-summary/paged")]
+        public async Task<IActionResult> GetPagedStockSummary(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null)
+        {
+            var report = await reportService.GetPagedStockSummaryAsync(
+                pageNumber, pageSize, search, status);
+
+            return Ok(report);
+        }
+
+        // GET: api/Report/low-stock/paged
+        [HttpGet("low-stock/paged")]
+        public async Task<IActionResult> GetPagedLowStockReport(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null)
+        {
+            var report = await reportService.GetPagedLowStockReportAsync(
+                pageNumber, pageSize, search, status);
+
+            return Ok(report);
+        }
+
+        // GET: api/Report/expiry/paged
+        [HttpGet("expiry/paged")]
+        public async Task<IActionResult> GetPagedExpiryReport(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null)
+        {
+            var report = await reportService.GetPagedExpiryReportAsync(
+                pageNumber, pageSize, search, status);
+
+            return Ok(report);
+        }
+
+        // GET: api/Report/stock-transactions/paged
+        [HttpGet("stock-transactions/paged")]
+        public async Task<IActionResult> GetPagedStockTransactionsReport(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null)
+        {
+            var report = await reportService.GetPagedStockTransactionsReportAsync(
+                pageNumber, pageSize, search, status);
+
+            return Ok(report);
+        }
+
+        // GET: api/Report/purchase-orders/paged
+        [HttpGet("purchase-orders/paged")]
+        public async Task<IActionResult> GetPagedPurchaseOrdersReport(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null)
+        {
+            var report = await reportService.GetPagedPurchaseOrdersReportAsync(
+                pageNumber, pageSize, search, status);
+
+            return Ok(report);
+        }
+
+        // GET: api/Report/goods-received/paged
+        [HttpGet("goods-received/paged")]
+        public async Task<IActionResult> GetPagedGoodsReceivedReport(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null)
+        {
+            var report = await reportService.GetPagedGoodsReceivedReportAsync(
+                pageNumber, pageSize, search, status);
+
+            return Ok(report);
+        }
+
+        // GET: api/Report/suppliers/paged
+        [HttpGet("suppliers/paged")]
+        public async Task<IActionResult> GetPagedSupplierReport(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null)
+        {
+            var report = await reportService.GetPagedSupplierReportAsync(
+                pageNumber, pageSize, search, status);
+
+            return Ok(report);
+        }
+
+        // GET: api/Report/inventory-valuation/paged
+        [HttpGet("inventory-valuation/paged")]
+        public async Task<IActionResult> GetPagedInventoryValuationReport(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null)
+        {
+            var report = await reportService.GetPagedInventoryValuationReportAsync(
+                pageNumber, pageSize, search, status);
+
+            return Ok(report);
         }
     }
 }

@@ -1,7 +1,9 @@
 ﻿
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
 using HealthcareInventoryManagementSystem.Application.DTOs.GoodsReceived;
 using HealthcareInventoryManagementSystem.Application.Interfaces;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
+using HealthcareInventoryManagementSystem.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HealthcareInventoryManagementSystem.Api.Controllers
@@ -19,6 +21,54 @@ namespace HealthcareInventoryManagementSystem.Api.Controllers
             var receipts = await goodsReceivedService.GetAllAsync();
 
             return Ok(receipts);
+        }
+
+        // GET: api/GoodsReceived/paged?pageNumber=1&pageSize=10
+        // Returns paginated Goods Received documents with optional search and status filters.
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPaged(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(new
+                {
+                    message = "Page number and page size must be greater than zero."
+                });
+            }
+
+            GoodsReceivedStatus? parsedStatus = null;
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (!Enum.TryParse<GoodsReceivedStatus>(
+                        status, true, out var statusValue)
+                    || !Enum.IsDefined(statusValue))
+                {
+                    return BadRequest(new
+                    {
+                        message = "The selected Goods Received status is invalid."
+                    });
+                }
+
+                parsedStatus = statusValue;
+            }
+
+            var request = new PaginationRequestDto
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            var result = await goodsReceivedService.GetPagedAsync(
+                request,
+                search,
+                parsedStatus);
+
+            return Ok(result);
         }
 
         // GET: api/GoodsReceived/1

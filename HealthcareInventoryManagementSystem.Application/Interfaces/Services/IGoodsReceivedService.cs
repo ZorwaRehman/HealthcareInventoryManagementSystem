@@ -1,6 +1,8 @@
 ﻿
 using HealthcareInventoryManagementSystem.Application.DTOs.GoodsReceived;
 using HealthcareInventoryManagementSystem.Application.DTOs.PurchaseOrders;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
+using HealthcareInventoryManagementSystem.Domain.Enums;
 
 namespace HealthcareInventoryManagementSystem.Application.Interfaces
 {
@@ -28,5 +30,11 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces
         Task<GoodsReceivedDto> ReleaseQuarantinedQuantityAsync(
             int goodsReceivedItemId,
             int quantity);
+
+        // Retrieves paginated Goods Received documents with optional search and status filters.
+        Task<PaginationResponseDto<GoodsReceivedDto>> GetPagedAsync(
+            PaginationRequestDto request,
+            string? search = null,
+            GoodsReceivedStatus? status = null);
     }
 }

@@ -11,6 +11,8 @@ using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
 using HealthcareInventoryManagementSystem.Domain.Entities;
 using HealthcareInventoryManagementSystem.Domain.Enums;
 using Microsoft.Extensions.Logging;
+using System.Linq.Expressions;
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
 
 namespace HealthcareInventoryManagementSystem.Application.Services
 {
@@ -58,6 +60,72 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                     "Items.Item");
 
             return _mapper.Map<IEnumerable<PurchaseOrderDto>>(purchaseOrders);
+        }
+
+        // Retrieve purchase orders using database-level pagination, search and status filtering.
+        public async Task<PaginationResponseDto<PurchaseOrderDto>> GetPagedPurchaseOrdersAsync(
+            PaginationRequestDto request,
+            string? search = null,
+            PurchaseOrderStatus? status = null)
+        {
+            // Keep pagination values within valid limits.
+            var pageNumber = Math.Max(1, request.PageNumber);
+            var pageSize = Math.Clamp(request.PageSize, 1, 100);
+
+            var searchTerm = string.IsNullOrWhiteSpace(search)
+                ? null
+                : search.Trim();
+
+            // Apply search and status filters at database level.
+            Expression<Func<PurchaseOrderEntity, bool>> predicate = order =>
+                (!status.HasValue || order.Status == status.Value)
+                &&
+                (
+                    searchTerm == null
+                    || order.OrderNumber.Contains(searchTerm)
+                    || (order.Supplier != null
+                        && order.Supplier.Name.Contains(searchTerm))
+                );
+
+            // Retrieve only the requested page.
+            var pagedResult = await _purchaseOrderRepository.GetPagedAsync(
+                predicate,
+                order => order.OrderDate,
+                pageNumber,
+                pageSize,
+                descending: true);
+
+            // Get the IDs of the orders returned on this page.
+            var purchaseOrderIds = pagedResult.Items
+                .Select(order => order.PurchaseOrderId)
+                .ToList();
+
+            // Load complete details for only the current page.
+            // This preserves the nested Supplier and Items.Item information
+            // required by the existing Purchase Order DTO.
+            var detailedOrders = purchaseOrderIds.Count == 0
+                ? new List<PurchaseOrderEntity>()
+                : (await _purchaseOrderRepository.FindAllWithNestedIncludesAsync(
+                    order => purchaseOrderIds.Contains(order.PurchaseOrderId),
+                    "Supplier",
+                    "Items.Item")).ToList();
+
+            var ordersById = detailedOrders.ToDictionary(
+                order => order.PurchaseOrderId);
+
+            // Preserve the order returned by the pagination query.
+            var purchaseOrderDtos = purchaseOrderIds
+                .Where(id => ordersById.ContainsKey(id))
+                .Select(id => _mapper.Map<PurchaseOrderDto>(ordersById[id]))
+                .ToList();
+
+            return new PaginationResponseDto<PurchaseOrderDto>
+            {
+                Items = purchaseOrderDtos,
+                TotalCount = pagedResult.TotalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
         // Retrieve one purchase order with its complete details.

@@ -1,4 +1,5 @@
 ﻿
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
 using HealthcareInventoryManagementSystem.Application.DTOs.Users;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Repositories;
 using HealthcareInventoryManagementSystem.Application.Interfaces.Services;
@@ -43,6 +44,67 @@ namespace HealthcareInventoryManagementSystem.Application.Services
                 CreatedAt = user.CreatedAt,
                 UpdatedAt = user.UpdatedAt
             }).ToList();
+        }
+
+        // Retrieve users with server-side pagination, search, and role filtering.
+        public async Task<PaginationResponseDto<UserDto>> GetPagedUsersAsync(
+            int pageNumber,
+            int pageSize,
+            string? search,
+            string? role)
+        {
+            // Validate pagination values.
+            pageNumber = Math.Max(1, pageNumber);
+            pageSize = Math.Clamp(pageSize, 1, 100);
+
+            // Prepare search and role filters.
+            var searchTerm = search?.Trim();
+            var roleFilter = role?.Trim();
+
+            // Retrieve the requested page from the database.
+            var result = await _userRepository.GetPagedAsync(
+                user =>
+                    (
+                        string.IsNullOrEmpty(searchTerm) ||
+                        user.FirstName.Contains(searchTerm) ||
+                        user.LastName.Contains(searchTerm) ||
+                        user.Email.Contains(searchTerm) ||
+                        (user.Role != null &&
+                         user.Role.Name.Contains(searchTerm))
+                    ) &&
+                    (
+                        string.IsNullOrEmpty(roleFilter) ||
+                        (user.Role != null &&
+                         user.Role.Name == roleFilter)
+                    ),
+                user => user.Id,
+                pageNumber,
+                pageSize,
+                true,
+                user => user.Role!
+            );
+
+            // Convert database entities into UserDto objects.
+            var userItems = result.Items.Select(user => new UserDto
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                RoleId = user.RoleId,
+                RoleName = user.Role?.Name ?? string.Empty,
+                IsActive = user.IsActive,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt
+            }).ToList();
+
+            return new PaginationResponseDto<UserDto>
+            {
+                Items = userItems,
+                TotalCount = result.TotalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
         }
 
         // Retrieve available roles.

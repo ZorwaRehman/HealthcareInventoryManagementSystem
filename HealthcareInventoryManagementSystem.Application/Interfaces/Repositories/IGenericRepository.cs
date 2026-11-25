@@ -27,6 +27,17 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces.Repositorie
             Expression<Func<T, bool>> predicate,
             params string[] includes);
 
+
+        // Retrieve a paginated set of records.
+        Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+            Expression<Func<T, bool>>? predicate,
+            Expression<Func<T, object>> orderBy,
+            int pageNumber,
+            int pageSize,
+            bool descending = false,
+            params Expression<Func<T, object>>[] includes);
+
+
         // Determine whether a matching record exists.
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
 

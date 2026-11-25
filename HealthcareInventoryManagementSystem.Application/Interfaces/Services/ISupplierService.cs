@@ -1,7 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
+
+using HealthcareInventoryManagementSystem.Application.Dtos.Pagination;
 using HealthcareInventoryManagementSystem.Application.DTOs.Suppliers;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace HealthcareInventoryManagementSystem.Application.Interfaces.Services
 {
@@ -26,5 +27,11 @@ namespace HealthcareInventoryManagementSystem.Application.Interfaces.Services
 
         // Reactivate an inactive supplier.
         Task<bool> ReactivateSupplierAsync(int supplierId);
+
+        // Get suppliers using server-side pagination, search, and status filtering.
+        Task<PaginationResponseDto<SupplierDto>> GetPagedSuppliersAsync(
+            PaginationRequestDto request,
+            string? search = null,
+            bool? isActive = null);
     }
 }
